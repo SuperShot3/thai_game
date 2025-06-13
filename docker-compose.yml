@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  thai-game:
+    build: .
+    ports:
+      - "4444:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
+      - PORT=3000
+    stdin_open: true # docker run -i
+    tty: true       # docker run -t 
