@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { Difficulty } from './types';
+import { Difficulty, DifficultyProgress } from './types';
 import GameBoard from './components/GameBoard/GameBoard';
 import DifficultySelector from './components/DifficultySelector/DifficultySelector';
 
@@ -23,14 +23,51 @@ const Title = styled.h1`
 
 const App: React.FC = () => {
   const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
+  const [progress, setProgress] = useState<DifficultyProgress>({
+    beginner: 0,
+    intermediate: 0,
+    advanced: 0
+  });
 
-  const handleDifficultyChange = (newDifficulty: Difficulty) => {
-    setDifficulty(newDifficulty);
+  const advanceToNextLevel = (currentLevel: Difficulty): Difficulty => {
+    switch (currentLevel) {
+      case 'beginner':
+        return 'intermediate';
+      case 'intermediate':
+        return 'advanced';
+      case 'advanced':
+        return 'advanced'; // Stay on advanced when completed
+      default:
+        return currentLevel;
+    }
   };
 
   const handleGameComplete = (result: boolean) => {
-    // Handle game completion
-    console.log('Game completed:', result);
+    if (result) {
+      setProgress(prev => {
+        const newProgress = { ...prev };
+        const currentProgress = prev[difficulty];
+        
+        // Calculate new progress based on current level
+        if (difficulty === 'beginner') {
+          newProgress.beginner = Math.min(100, currentProgress + 20);
+          // Advance to intermediate when beginner is complete
+          if (newProgress.beginner === 100) {
+            setDifficulty('intermediate');
+          }
+        } else if (difficulty === 'intermediate') {
+          newProgress.intermediate = Math.min(100, currentProgress + 20);
+          // Advance to advanced when intermediate is complete
+          if (newProgress.intermediate === 100) {
+            setDifficulty('advanced');
+          }
+        } else if (difficulty === 'advanced') {
+          newProgress.advanced = Math.min(100, currentProgress + 20);
+        }
+        
+        return newProgress;
+      });
+    }
   };
 
   return (
@@ -39,7 +76,7 @@ const App: React.FC = () => {
         <Title>Thai Language Sentence Builder</Title>
         <DifficultySelector
           currentDifficulty={difficulty}
-          onSelect={handleDifficultyChange}
+          progress={progress}
         />
         <GameBoard
           difficulty={difficulty}

@@ -35,4 +35,15 @@ export interface DropZoneProps {
 export interface GameBoardProps {
   difficulty: Difficulty;
   onGameComplete: (result: boolean) => void;
+}
+
+export interface DifficultyProgress {
+  beginner: number;
+  intermediate: number;
+  advanced: number;
+}
+
+export interface DifficultySelectorProps {
+  currentDifficulty: Difficulty;
+  progress: DifficultyProgress;
 } 
