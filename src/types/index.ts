@@ -1,9 +1,10 @@
-export type Difficulty = 'beginner' | 'intermediate' | 'advanced';
+export type Difficulty = 'beginner' | 'intermediate' | 'advanced' | 'easy';
 
 export interface ThaiSentence {
   thai: string[];
   english: string;
   hints?: string[];
+  difficulty: Difficulty;
 }
 
 export interface GameState {
@@ -11,6 +12,8 @@ export interface GameState {
   currentSentence: ThaiSentence;
   userAnswer: string[];
   isComplete: boolean;
+  isCorrect: boolean;
+  completionTime?: number;
   feedback: {
     isCorrect: boolean;
     message: string;
@@ -34,13 +37,14 @@ export interface DropZoneProps {
 
 export interface GameBoardProps {
   difficulty: Difficulty;
-  onGameComplete: (result: boolean) => void;
+  onGameComplete: (isCorrect: boolean, correctWords: number) => void;
 }
 
 export interface DifficultyProgress {
   beginner: number;
   intermediate: number;
   advanced: number;
+  easy: number;
 }
 
 export interface DifficultySelectorProps {

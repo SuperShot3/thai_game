@@ -1,28 +1,98 @@
 import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
-import { DndProvider, useDrag, useDrop } from 'react-dnd';
+import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
+import { TouchBackend } from 'react-dnd-touch-backend';
+import styled from 'styled-components';
 import { GameBoardProps, ThaiSentence } from '../../types';
 import { generateSentence } from '../../services/sentenceGenerator';
+import DraggableWord from '../DraggableWord/DraggableWord';
+import DroppableZone from '../DroppableZone/DroppableZone';
+import '../../styles/fonts.css';
 
-const Container = styled.div`
-  width: 100%;
-  max-width: 800px;
+const GameBoardContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   padding: 20px;
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  background: #1a1a2e;
+  min-height: 100vh;
+  color: #ffffff;
+`;
+
+const SentenceContainer = styled.div`
+  background: rgba(255, 255, 255, 0.1);
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  text-align: center;
+  max-width: 800px;
+  width: 100%;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 `;
 
 const WordContainer = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 20px;
-  min-height: 60px;
-  padding: 10px;
-  background: #f8f9fa;
-  border-radius: 5px;
+  gap: 12px;
+  margin: 20px 0;
+  justify-content: center;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+`;
+
+const AnswerContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 20px 0;
+  justify-content: center;
+  min-height: 70px;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+`;
+
+const ButtonContainer = styled.div`
+  display: flex;
+  gap: 15px;
+  margin-top: 20px;
+`;
+
+const Button = styled.button<{ isPrimary?: boolean }>`
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: ${props => props.isPrimary ? '#4CAF50' : 'rgba(255, 255, 255, 0.1)'};
+  color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+
+  &:hover {
+    background: ${props => props.isPrimary ? '#45a049' : 'rgba(255, 255, 255, 0.15)'};
+    transform: translateY(-2px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    background: rgba(255, 255, 255, 0.05);
+    cursor: not-allowed;
+    transform: none;
+  }
+`;
+
+const ThaiText = styled.span`
+  font-family: 'Noto Sans Thai', sans-serif;
+  font-size: 1.2rem;
+  line-height: 1.5;
 `;
 
 const DropZone = styled.div<{ isOver: boolean }>`
@@ -53,93 +123,48 @@ const WordCard = styled.div<{ isDragging: boolean }>`
   }
 `;
 
-const Button = styled.button`
-  padding: 10px 20px;
-  background: #2ecc71;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: background 0.3s ease;
+const ResultContainer = styled.div`
+  margin-top: 20px;
+  padding: 15px;
+  border-radius: 8px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.1);
+  animation: fadeIn 0.3s ease-in;
+`;
 
-  &:hover {
-    background: #27ae60;
-  }
+const ConfirmDialog = styled.div`
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #1a1a2e;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  text-align: center;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+`;
 
-  &:disabled {
-    background: #95a5a6;
-    cursor: not-allowed;
-  }
+const Overlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 999;
+`;
+
+const DialogButton = styled(Button)`
+  margin: 10px;
+  min-width: 100px;
 `;
 
 interface DragItem {
   word: string;
   index: number;
 }
-
-const DraggableWord = ({ word, index, isInUse, onDragStart, onDragEnd }: { 
-  word: string; 
-  index: number;
-  isInUse: boolean;
-  onDragStart: () => void;
-  onDragEnd: () => void;
-}) => {
-  const [{ isDragging }, drag] = useDrag<DragItem, unknown, { isDragging: boolean }>({
-    type: 'WORD',
-    item: { word, index },
-    collect: (monitor) => ({
-      isDragging: monitor.isDragging(),
-    }),
-    canDrag: !isInUse,
-  });
-
-  useEffect(() => {
-    if (isDragging) {
-      onDragStart();
-    } else {
-      onDragEnd();
-    }
-  }, [isDragging, onDragStart, onDragEnd]);
-
-  return (
-    <WordCard ref={drag} isDragging={isDragging} style={{ opacity: isInUse ? 0.5 : 1 }}>
-      {word}
-    </WordCard>
-  );
-};
-
-const DroppableZone = ({ position, onDrop, word, onRemove }: { 
-  position: number; 
-  onDrop: (word: string) => void; 
-  word?: string;
-  onRemove: () => void;
-}) => {
-  const [{ isOver }, drop] = useDrop({
-    accept: 'WORD',
-    drop: (item: DragItem) => onDrop(item.word),
-    collect: (monitor) => ({
-      isOver: monitor.isOver(),
-    }),
-  });
-
-  const handleDoubleClick = () => {
-    if (word) {
-      onRemove();
-    }
-  };
-
-  return (
-    <DropZone 
-      ref={drop} 
-      isOver={isOver} 
-      onDoubleClick={handleDoubleClick}
-      style={{ cursor: word ? 'pointer' : 'default' }}
-    >
-      {word || ''}
-    </DropZone>
-  );
-};
 
 // Fisher-Yates shuffle algorithm
 const shuffleArray = <T,>(array: T[]): T[] => {
@@ -157,12 +182,21 @@ interface ShuffledWord {
   isInUse: boolean;
 }
 
+// Helper function to detect if the device is touch-enabled
+const isTouchDevice = () => {
+  return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+};
+
 const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onGameComplete }) => {
   const [sentence, setSentence] = useState<ThaiSentence>(() => generateSentence(difficulty));
   const [shuffledWords, setShuffledWords] = useState<ShuffledWord[]>([]);
   const [userAnswer, setUserAnswer] = useState<string[]>([]);
   const [isComplete, setIsComplete] = useState(false);
   const [draggedWordIndex, setDraggedWordIndex] = useState<number | null>(null);
+  const [currentFont, setCurrentFont] = useState(1);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [isCorrect, setIsCorrect] = useState(false);
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
   // Update sentence when difficulty changes
   useEffect(() => {
@@ -184,15 +218,19 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onGameComplete }) => 
   }, [sentence]);
 
   const handleDrop = (word: string, position: number) => {
-    // Find the word in shuffled words and mark it as in use
-    setShuffledWords(prev => prev.map(w => 
-      w.word === word ? { ...w, isInUse: true } : w
-    ));
+    if (isComplete) return;
+    
+    setUserAnswer(prev => {
+      const newAnswer = [...prev];
+      newAnswer[position] = word;
+      return newAnswer;
+    });
 
-    const newAnswer = [...userAnswer];
-    newAnswer[position] = word;
-    setUserAnswer(newAnswer);
-    setDraggedWordIndex(null);
+    setShuffledWords(prev => 
+      prev.map((w, i) => 
+        i === draggedWordIndex ? { ...w, isInUse: true } : w
+      )
+    );
   };
 
   const handleWordDragStart = (index: number) => {
@@ -207,34 +245,53 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onGameComplete }) => 
   };
 
   const handleWordRemove = (position: number) => {
-    const removedWord = userAnswer[position];
-    if (removedWord) {
-      // Find the word in shuffled words and mark it as not in use
-      setShuffledWords(prev => prev.map(w => 
-        w.word === removedWord ? { ...w, isInUse: false } : w
-      ));
-    }
+    if (isComplete) return;
 
-    const newAnswer = [...userAnswer];
-    newAnswer[position] = '';
-    setUserAnswer(newAnswer);
+    const wordToRemove = userAnswer[position];
+    if (!wordToRemove) return;
+
+    setUserAnswer(prev => {
+      const newAnswer = [...prev];
+      newAnswer[position] = '';
+      return newAnswer;
+    });
+
+    setShuffledWords(prev =>
+      prev.map(w => 
+        w.word === wordToRemove ? { ...w, isInUse: false } : w
+      )
+    );
+  };
+
+  const getNextFont = () => {
+    return (currentFont % 4) + 1;
   };
 
   const checkAnswer = () => {
-    const isCorrect = userAnswer.join('') === sentence.thai.join('');
+    const correctWords = userAnswer.filter((word, index) => word === sentence.thai[index]).length;
+    const isAllCorrect = correctWords === sentence.thai.length;
+    setIsCorrect(isAllCorrect);
     setIsComplete(true);
-    onGameComplete(isCorrect);
-    
-    // If the answer is correct, generate a new sentence after a short delay
-    if (isCorrect) {
-      setTimeout(() => {
-        const newSentence = generateSentence(difficulty);
-        setSentence(newSentence);
-        setUserAnswer([]);
-        setIsComplete(false);
-        setDraggedWordIndex(null);
-      }, 1500); // 1.5 second delay to show the success state
-    }
+    onGameComplete(isAllCorrect, correctWords);
+    setShowConfirmDialog(true);
+  };
+
+  const handleNextRound = () => {
+    const newSentence = generateSentence(difficulty);
+    setSentence(newSentence);
+    setUserAnswer([]);
+    setIsComplete(false);
+    setDraggedWordIndex(null);
+    setCurrentFont(getNextFont());
+    setShowConfirmDialog(false);
+  };
+
+  const handleTryAgain = () => {
+    setUserAnswer([]);
+    setIsComplete(false);
+    setDraggedWordIndex(null);
+    setShuffledWords(prev => prev.map(w => ({ ...w, isInUse: false })));
+    setShowConfirmDialog(false);
   };
 
   const resetGame = () => {
@@ -246,51 +303,78 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onGameComplete }) => 
   };
 
   return (
-    <DndProvider backend={HTML5Backend}>
-      <Container>
-        <WordContainer>
-          {shuffledWords.map(({ word, originalIndex, isInUse }) => (
-            <DraggableWord 
-              key={originalIndex} 
-              word={word} 
-              index={originalIndex} 
-              isInUse={isInUse}
-              onDragStart={() => handleWordDragStart(originalIndex)}
-              onDragEnd={handleWordDragEnd}
-            />
-          ))}
-        </WordContainer>
-
-        <WordContainer>
+    <DndProvider backend={isMobile ? TouchBackend : HTML5Backend}>
+      <GameBoardContainer>
+        <SentenceContainer>
+          <div className="english-text">{sentence.english}</div>
+          <div className={`thai-text font-${currentFont}`}>{sentence.thai.join(' ')}</div>
+        </SentenceContainer>
+        
+        <AnswerContainer>
           {sentence.thai.map((_, index) => (
             <DroppableZone
               key={index}
-              position={index}
+              index={index}
               onDrop={(word) => handleDrop(word, index)}
-              word={userAnswer[index]}
               onRemove={() => handleWordRemove(index)}
+              word={userAnswer[index] || ''}
+              isComplete={isComplete}
+              isCorrect={isComplete && userAnswer[index] === sentence.thai[index]}
+              fontClass={`font-${currentFont}`}
+            />
+          ))}
+        </AnswerContainer>
+
+        <WordContainer>
+          {shuffledWords.map((word, index) => (
+            <DraggableWord
+              key={`${word}-${index}`}
+              word={word.word}
+              index={index}
+              isInUse={word.isInUse}
+              onDragStart={() => handleWordDragStart(index)}
+              onDragEnd={handleWordDragEnd}
+              fontClass={`font-${currentFont}`}
             />
           ))}
         </WordContainer>
 
-        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-          <Button onClick={checkAnswer} disabled={isComplete}>
+        <ButtonContainer>
+          <Button 
+            isPrimary 
+            onClick={checkAnswer} 
+            disabled={isComplete || userAnswer.length !== sentence.thai.length}
+          >
             Check Answer
           </Button>
-          <Button onClick={resetGame}>
-            Try Again
+          <Button 
+            onClick={resetGame} 
+            disabled={!isComplete && userAnswer.length === 0}
+          >
+            Reset
           </Button>
-        </div>
+        </ButtonContainer>
 
-        {isComplete && (
-          <div style={{ marginTop: '20px', textAlign: 'center' }}>
-            <p>English: {sentence.english}</p>
-            {userAnswer.join('') === sentence.thai.join('') && (
-              <p style={{ color: '#2ecc71', fontWeight: 'bold' }}>Correct! New sentence coming up...</p>
-            )}
-          </div>
+        {showConfirmDialog && (
+          <>
+            <Overlay onClick={() => setShowConfirmDialog(false)} />
+            <ConfirmDialog>
+              <div className={`thai-text font-${currentFont}`}>
+                {isCorrect ? 'ถูกต้อง! (Correct!)' : 'ไม่ถูกต้อง (Incorrect)'}
+              </div>
+              {isCorrect ? (
+                <DialogButton isPrimary onClick={handleNextRound}>
+                  Next Round
+                </DialogButton>
+              ) : (
+                <DialogButton onClick={handleTryAgain}>
+                  Try Again
+                </DialogButton>
+              )}
+            </ConfirmDialog>
+          </>
         )}
-      </Container>
+      </GameBoardContainer>
     </DndProvider>
   );
 };

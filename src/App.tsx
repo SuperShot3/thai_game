@@ -1,24 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { Difficulty, DifficultyProgress } from './types';
 import GameBoard from './components/GameBoard/GameBoard';
+import AdManager from './components/Ads/AdManager';
+import { userService } from './services/userService';
+import { Difficulty, DifficultyProgress } from './types/game';
 import DifficultySelector from './components/DifficultySelector/DifficultySelector';
+import UserForm from './components/UserForm/UserForm';
+import Leaderboard from './components/Leaderboard/Leaderboard';
 
 const AppContainer = styled.div`
   min-height: 100vh;
+  background: #1a1a2e;
+  color: white;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  background-color: #f5f5f5;
-  padding: 20px;
 `;
 
 const Title = styled.h1`
-  color: #2c3e50;
-  margin-bottom: 30px;
+  font-size: 2.5rem;
+  margin-bottom: 20px;
   text-align: center;
+  color: #fff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 `;
 
 const App: React.FC = () => {
@@ -26,62 +33,87 @@ const App: React.FC = () => {
   const [progress, setProgress] = useState<DifficultyProgress>({
     beginner: 0,
     intermediate: 0,
-    advanced: 0
+    advanced: 0,
+    easy: 0
   });
+  const [showUserForm, setShowUserForm] = useState(true);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [isCommercialMode, setIsCommercialMode] = useState(false);
 
-  const advanceToNextLevel = (currentLevel: Difficulty): Difficulty => {
-    switch (currentLevel) {
-      case 'beginner':
-        return 'intermediate';
-      case 'intermediate':
-        return 'advanced';
-      case 'advanced':
-        return 'advanced'; // Stay on advanced when completed
-      default:
-        return currentLevel;
-    }
+  useEffect(() => {
+    userService.initialize();
+    setProgress(userService.getProgress());
+  }, []);
+
+  const handleUserSubmit = (userData: { name: string; email: string }) => {
+    userService.setUserData(userData);
+    setShowUserForm(false);
   };
 
-  const handleGameComplete = (result: boolean) => {
-    if (result) {
-      setProgress(prev => {
-        const newProgress = { ...prev };
-        const currentProgress = prev[difficulty];
-        
-        // Calculate new progress based on current level
-        if (difficulty === 'beginner') {
-          newProgress.beginner = Math.min(100, currentProgress + 20);
-          // Advance to intermediate when beginner is complete
-          if (newProgress.beginner === 100) {
-            setDifficulty('intermediate');
-          }
-        } else if (difficulty === 'intermediate') {
-          newProgress.intermediate = Math.min(100, currentProgress + 20);
-          // Advance to advanced when intermediate is complete
-          if (newProgress.intermediate === 100) {
-            setDifficulty('advanced');
-          }
-        } else if (difficulty === 'advanced') {
-          newProgress.advanced = Math.min(100, currentProgress + 20);
-        }
-        
-        return newProgress;
-      });
-    }
+  const handleSkip = () => {
+    userService.setUserData(null);
+    setShowUserForm(false);
   };
+
+  const handleGameComplete = (isCorrect: boolean, correctWords: number) => {
+    userService.updateProgress(difficulty, isCorrect);
+    if (isCorrect) {
+      userService.recordLevelCompletion(difficulty, correctWords);
+    }
+    setProgress(userService.getProgress());
+  };
+
+  const handleToggleCommercialMode = () => {
+    setIsCommercialMode(true);
+  };
+
+  if (showUserForm) {
+    return (
+      <AppContainer>
+        <UserForm onSubmit={handleUserSubmit} onSkip={handleSkip} />
+      </AppContainer>
+    );
+  }
 
   return (
     <DndProvider backend={HTML5Backend}>
       <AppContainer>
-        <Title>Thai Language Sentence Builder</Title>
-        <DifficultySelector
-          currentDifficulty={difficulty}
-          progress={progress}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <h1 style={{ margin: 0 }}>Thai Sentence Builder</h1>
+          <button 
+            onClick={() => setShowLeaderboard(!showLeaderboard)}
+            style={{
+              padding: '10px 20px',
+              background: '#3498db',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: 'pointer'
+            }}
+          >
+            {showLeaderboard ? 'Hide Leaderboard' : 'Show Leaderboard'}
+          </button>
+        </div>
+
+        <AdManager 
+          isCommercialMode={isCommercialMode}
+          onToggleCommercialMode={handleToggleCommercialMode}
         />
-        <GameBoard
-          difficulty={difficulty}
-          onGameComplete={handleGameComplete}
-        />
+
+        {showLeaderboard ? (
+          <Leaderboard />
+        ) : (
+          <>
+            <DifficultySelector 
+              currentDifficulty={difficulty} 
+              progress={progress}
+            />
+            <GameBoard 
+              difficulty={difficulty} 
+              onGameComplete={handleGameComplete} 
+            />
+          </>
+        )}
       </AppContainer>
     </DndProvider>
   );

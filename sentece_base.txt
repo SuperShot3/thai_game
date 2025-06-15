@@ -1,0 +1,567 @@
+{
+  "collections": {
+    "basic_greetings": {
+      "id": "basic_greetings",
+      "name": "Basic Greetings",
+      "description": "Common Thai greetings and expressions",
+      "sentences": [
+        {
+          "thai": ["สวัสดี"],
+          "english": "Hello",
+          "hints": ["Greeting"],
+          "difficulty": "easy"
+        },
+        {
+          "thai": ["ขอบคุณ"],
+          "english": "Thank you",
+          "hints": ["Gratitude"],
+          "difficulty": "easy"
+        },
+        {
+          "thai": ["ผม", "ชื่อ", "สมชาย"],
+          "english": "My name is Somchai (male)",
+          "hints": ["I (male)", "name", "Somchai"],
+          "difficulty": "beginner"
+        },
+        {
+          "thai": ["คุณ", "สบาย", "ดี", "ไหม"],
+          "english": "How are you?",
+          "hints": ["you", "well", "good", "question particle"],
+          "difficulty": "intermediate"
+        }
+      ]
+    },
+    "daily_conversation": {
+      "id": "daily_conversation",
+      "name": "Daily Conversation",
+      "description": "Common phrases for everyday use",
+      "sentences": [
+        {
+          "thai": ["ผม", "ชอบ", "กิน", "ข้าว"],
+          "english": "I like to eat rice",
+          "hints": ["I (male)", "to like", "to eat", "rice"],
+          "difficulty": "intermediate"
+        },
+        {
+          "thai": ["ฉัน", "ไม่", "ดู", "หนัง"],
+          "english": "I don't watch movies",
+          "hints": ["I (female)", "not", "watch", "movie"],
+          "difficulty": "intermediate"
+        },
+        {
+          "thai": ["ทำ", "ให้", "ฉัน", "หัวเราะ"],
+          "english": "Make me laugh",
+          "hints": ["make", "for", "me", "laugh"],
+          "difficulty": "intermediate"
+        }
+      ]
+    },
+    "feelings_and_reactions": {
+      "id": "feelings_and_reactions",
+      "name": "Feelings & Reactions",
+      "description": "Expressing emotions and reactions",
+      "sentences": [
+        {
+          "thai": ["น้ำ", "ตา", "เศร้า"],
+          "english": "Sad tears",
+          "hints": ["tears", "sad"],
+          "difficulty": "beginner"
+        },
+        {
+          "thai": ["ร้องไห้", "เพราะ", "เศร้า"],
+          "english": "Cry because of sadness",
+          "hints": ["cry", "because", "sad"],
+          "difficulty": "intermediate"
+        },
+        {
+          "thai": ["หัวเราะ", "ดัง", "มาก"],
+          "english": "Laugh very loudly",
+          "hints": ["laugh", "loudly", "very"],
+          "difficulty": "intermediate"
+        }
+      ]
+    },
+    "school_and_work": {
+      "id": "school_and_work",
+      "name": "School and Work",
+      "description": "School, work and responsibilities",
+      "sentences": [
+        {
+          "thai": ["ผู้จัดการ", "แก้ไข", "ปัญหา"],
+          "english": "The manager solves problems",
+          "hints": ["manager", "to solve", "problem"],
+          "difficulty": "advanced"
+        },
+        {
+          "thai": ["ฉัน", "มี", "หน้าที่", "ทำงาน"],
+          "english": "I have a duty to work",
+          "hints": ["I", "have", "duty", "work"],
+          "difficulty": "advanced"
+        }
+      ]
+    },
+    "misc_vocab": {
+      "id": "misc_vocab",
+      "name": "Miscellaneous Vocabulary",
+      "description": "Random useful vocabulary words",
+      "sentences": [
+        {
+          "thai": ["โอกาส", "ดี"],
+          "english": "Good opportunity",
+          "hints": ["opportunity", "good"],
+          "difficulty": "beginner"
+        },
+        {
+          "thai": ["กระเป๋าเป้", "ใหม่"],
+          "english": "New backpack",
+          "hints": ["backpack", "new"],
+          "difficulty": "beginner"
+        },
+        {
+          "thai": ["กะทิ", "หวาน"],
+          "english": "Sweet coconut milk",
+          "hints": ["coconut milk", "sweet"],
+          "difficulty": "beginner"
+        }
+      ]
+    },
+    "complex_sentences": {
+      "id": "complex_sentences",
+      "name": "Complex Sentences",
+      "description": "Longer, more advanced Thai sentences",
+      "sentences": [
+        {
+          "thai": ["วันนี้", "อากาศ", "ดี", "มาก"],
+          "english": "The weather is very good today",
+          "hints": ["today", "weather", "good", "very"],
+          "difficulty": "advanced"
+        },
+        {
+          "thai": ["ผม", "จะ", "ไป", "เที่ยว", "ที่", "เชียงใหม่"],
+          "english": "I will travel to Chiang Mai",
+          "hints": ["I (male)", "will", "to go", "to travel", "at", "Chiang Mai"],
+          "difficulty": "advanced"
+        },
+        {
+          "thai": ["ผม", "ยุ่งยาก", "กับ", "เทคนิค", "ใหม่"],
+          "english": "I have trouble with new technique",
+          "hints": ["I (male)", "trouble", "technique", "new"],
+          "difficulty": "advanced"
+        }
+      ]
+    }
+  }
+}
+{
+  "collections": {
+    "basic_greetings": {
+      "id": "basic_greetings",
+      "name": "Basic Greetings",
+      "description": "Common Thai greetings and simple conversation starters",
+      "sentences": [
+        {
+          "thai": ["สวัสดี", "ครับ"],
+          "english": "Hello (male)",
+          "hints": ["hello", "male particle"],
+          "difficulty": "easy"
+        },
+        {
+          "thai": ["สวัสดี", "ค่ะ"],
+          "english": "Hello (female)",
+          "hints": ["hello", "female particle"],
+          "difficulty": "easy"
+        },
+        {
+          "thai": ["ขอบคุณ", "มาก"],
+          "english": "Thank you very much",
+          "hints": ["thank you", "very"],
+          "difficulty": "beginner"
+        }
+      ]
+    },
+    "food_and_drinks": {
+      "id": "food_and_drinks",
+      "name": "Food and Drinks",
+      "description": "Sentences related to food and eating",
+      "sentences": [
+        {
+          "thai": ["กิน", "ข้าว", "เร็ว"],
+          "english": "Eat rice quickly",
+          "hints": ["eat", "rice", "quickly"],
+          "difficulty": "beginner"
+        },
+        {
+          "thai": ["กะทิ", "หวาน", "มาก"],
+          "english": "Coconut milk is very sweet",
+          "hints": ["coconut milk", "sweet", "very"],
+          "difficulty": "intermediate"
+        },
+        {
+          "thai": ["น้ำ", "เย็น", "เฉียบ"],
+          "english": "The water is very cold",
+          "hints": ["water", "cold", "very"],
+          "difficulty": "intermediate"
+        }
+      ]
+    },
+    "daily_actions": {
+      "id": "daily_actions",
+      "name": "Daily Actions",
+      "description": "Everyday activities and simple actions",
+      "sentences": [
+        {
+          "thai": ["ผม", "ดู", "หนัง", "ทุกวัน"],
+          "english": "I watch movies every day",
+          "hints": ["I (male)", "watch", "movie", "every day"],
+          "difficulty": "intermediate"
+        },
+        {
+          "thai": ["เธอ", "ลืม", "กระเป๋าเป้"],
+          "english": "She forgot her backpack",
+          "hints": ["she", "forget", "backpack"],
+          "difficulty": "intermediate"
+        },
+        {
+          "thai": ["เพื่อน", "ใหม่", "ของ", "ผม"],
+          "english": "My new friend",
+          "hints": ["friend", "new", "my"],
+          "difficulty": "beginner"
+        }
+      ]
+    },
+    "school_and_work": {
+      "id": "school_and_work",
+      "name": "School and Work",
+      "description": "Situations in school and at work",
+      "sentences": [
+        {
+          "thai": ["ผู้จัดการ", "ยุ่งยาก", "กับ", "งาน"],
+          "english": "The manager has trouble with work",
+          "hints": ["manager", "trouble", "with", "work"],
+          "difficulty": "advanced"
+        },
+        {
+          "thai": ["ฉัน", "ต้อง", "แก้ไข", "ปัญหา"],
+          "english": "I must solve the problem",
+          "hints": ["I", "must", "solve", "problem"],
+          "difficulty": "advanced"
+        },
+        {
+          "thai": ["หน้าที่", "ของ", "ฉัน", "คือ", "เรียน"],
+          "english": "My duty is to study",
+          "hints": ["duty", "my", "is", "to study"],
+          "difficulty": "advanced"
+        }
+      ]
+    },
+    "conversation_and_feelings": {
+      "id": "conversation_and_feelings",
+      "name": "Conversation & Feelings",
+      "description": "Talking about emotions and talking with others",
+      "sentences": [
+        {
+          "thai": ["เศร้า", "จน", "ร้องไห้"],
+          "english": "So sad that (I) cried",
+          "hints": ["sad", "until", "cry"],
+          "difficulty": "intermediate"
+        },
+        {
+          "thai": ["หัวเราะ", "กับ", "เพื่อน"],
+          "english": "Laugh with friends",
+          "hints": ["laugh", "with", "friends"],
+          "difficulty": "beginner"
+        },
+        {
+          "thai": ["เธอ", "กล้า", "พูด", "ความจริง"],
+          "english": "She dares to speak the truth",
+          "hints": ["she", "dare", "speak", "truth"],
+          "difficulty": "advanced"
+        }
+      ]
+    },
+    "misc_and_fun": {
+      "id": "misc_and_fun",
+      "name": "Miscellaneous & Fun",
+      "description": "Fun, animals, and extra vocabulary",
+      "sentences": [
+        {
+          "thai": ["จิงโจ้", "อยู่", "ออสเตรเลีย"],
+          "english": "Kangaroos are in Australia",
+          "hints": ["kangaroo", "in", "Australia"],
+          "difficulty": "beginner"
+        },
+        {
+          "thai": ["รถม้า", "วิ่ง", "ใน", "สวน"],
+          "english": "A horse carriage runs in the park",
+          "hints": ["horse carriage", "run", "in", "park"],
+          "difficult
+
+
+{
+  "collections": {
+    "basic_greetings": {
+      "id": "basic_greetings",
+      "name": "Basic Greetings",
+      "description": "Greetings and polite expressions",
+      "sentences": [
+        {
+          "thai": ["ยินดี", "ที่", "ได้", "รู้จัก"],
+          "english": "Nice to meet you",
+          "hints": ["pleased", "to", "know", "meet"],
+          "difficulty": "beginner"
+        }
+      ]
+    },
+    "food_and_drinks": {
+      "id": "food_and_drinks",
+      "name": "Food and Drinks",
+      "description": "Talking about food and drink",
+      "sentences": [
+        {
+          "thai": ["น้ำ", "แข็ง", "ใน", "แก้ว"],
+          "english": "Ice in the glass",
+          "hints": ["ice", "in", "glass"],
+          "difficulty": "beginner"
+        },
+        {
+          "thai": ["ข้าว", "กับ", "แกง"],
+          "english": "Rice with curry",
+          "hints": ["rice", "with", "curry"],
+          "difficulty": "beginner"
+        },
+        {
+          "thai": ["ผม", "ขอ", "น้ำ", "เปล่า"],
+          "english": "I would like plain water",
+          "hints": ["I (male)", "request", "water", "plain"],
+          "difficulty": "intermediate"
+        }
+      ]
+    },
+    "daily_life": {
+      "id": "daily_life",
+      "name": "Daily Life",
+      "description": "Phrases for everyday situations",
+      "sentences": [
+        {
+          "thai": ["ผม", "ตื่น", "เช้า", "ทุกวัน"],
+          "english": "I wake up early every day",
+          "hints": ["I (male)", "wake up", "early", "every day"],
+          "difficulty": "intermediate"
+        },
+        {
+          "thai": ["ฉัน", "ลืม", "โทรศัพท์", "ที่", "บ้าน"],
+          "english": "I forgot my phone at home",
+          "hints": ["I (female)", "forget", "phone", "at", "home"],
+          "difficulty": "intermediate"
+        }
+      ]
+    },
+    "feelings_and_moods": {
+      "id": "feelings_and_moods",
+      "name": "Feelings and Moods",
+      "description": "Describing feelings or emotions",
+      "sentences": [
+        {
+          "thai": ["ผม", "รู้สึก", "เศร้า", "วันนี้"],
+          "english": "I feel sad today",
+          "hints": ["I (male)", "feel", "sad", "today"],
+          "difficulty": "intermediate"
+        },
+        {
+          "thai": ["หัวเราะ", "เสียง", "ดัง"],
+          "english": "Laugh loudly",
+          "hints": ["laugh", "sound", "loud"],
+          "difficulty": "beginner"
+        },
+        {
+          "thai": ["เขา", "ร้องไห้", "ใน", "ห้อง"],
+          "english": "He cries in the room",
+          "hints": ["he", "cry", "in", "room"],
+          "difficulty": "intermediate"
+        }
+      ]
+    },
+    "school_and_work": {
+      "id": "school_and_work",
+      "name": "School and Work",
+      "description": "Phrases for learning and working",
+      "sentences": [
+        {
+          "thai": ["ฉัน", "ทำ", "งาน", "กับ", "เพื่อน"],
+          "english": "I work with friends",
+          "hints": ["I (female)", "work", "with", "friends"],
+          "difficulty": "intermediate"
+        },
+        {
+          "thai": ["ผู้จัดการ", "ใหม่", "ใจดี"],
+          "english": "The new manager is kind",
+          "hints": ["manager", "new", "kind"],
+          "difficulty": "advanced"
+        }
+      ]
+    },
+    "transport_and_places": {
+      "id": "transport_and_places",
+      "name": "Transport and Places",
+      "description": "Sentences about travel and places",
+      "sentences": [
+        {
+          "thai": ["รถม้า", "ไป", "ตลาด"],
+          "english": "The horse carriage goes to the market",
+          "hints": ["carriage", "go", "market"],
+          "difficulty": "beginner"
+        },
+        {
+          "thai": ["ผม", "นั่ง", "รถ", "ไป", "โรงเรียน"],
+          "english": "I take a car to school",
+          "hints": ["I (male)", "sit", "car", "go", "school"],
+          "difficulty": "intermediate"
+        }
+      ]
+    },
+    "nature_and_weather": {
+      "id": "nature_and_weather",
+      "name": "Nature and Weather",
+      "description": "Weather and environment",
+      "sentences": [
+        {
+          "thai": ["อากาศ", "เย็น", "มาก"],
+          "english": "The weather is very cool",
+          "hints": ["weather", "cool", "very"],
+          "difficulty": "intermediate"
+        },
+        {
+          "thai": ["ฝน", "ตก", "ทุกวัน"],
+          "english": "It rains every day",
+          "hints": ["rain", "fall", "every day"],
+          "difficulty": "beginner"
+        }
+      ]
+    }
+  }
+}
+
+{
+  "collections": {
+    "daily_life": {
+      "id": "daily_life",
+      "name": "Daily Life",
+      "description": "Phrases from daily activities",
+      "sentences": [
+        {
+          "thai": ["ท่อ", "ตัน"],
+          "english": "The pipe is clogged",
+          "hints": ["pipe", "clogged"],
+          "difficulty": "beginner"
+        },
+        {
+          "thai": ["เศษ", "ขยะ", "ใน", "ท่อ"],
+          "english": "Scraps in the pipe",
+          "hints": ["scraps", "in", "pipe"],
+          "difficulty": "beginner"
+        },
+        {
+          "thai": ["เลือก", "ชนิด", "ของ", "ท่อ"],
+          "english": "Choose the type of pipe",
+          "hints": ["choose", "type", "of", "pipe"],
+          "difficulty": "beginner"
+        },
+        {
+          "thai": ["น้ำ", "ไหล", "ตลอด"],
+          "english": "The water flows all the time",
+          "hints": ["water", "flow", "always"],
+          "difficulty": "intermediate"
+        },
+        {
+          "thai": ["ผู้จัดการ", "แก้ไข", "ปัญหา", "ท่อ"],
+          "english": "The manager solves the pipe problem",
+          "hints": ["manager", "solve", "problem", "pipe"],
+          "difficulty": "advanced"
+        }
+      ]
+    },
+    "feelings_and_conversation": {
+      "id": "feelings_and_conversation",
+      "name": "Feelings and Conversation",
+      "description": "Feelings, thinking, and daily talk",
+      "sentences": [
+        {
+          "thai": ["สงสัย", "เขา", "ลืม", "หน้าที่"],
+          "english": "I think he forgot his duty",
+          "hints": ["think", "he", "forget", "duty"],
+          "difficulty": "intermediate"
+        },
+        {
+          "thai": ["เธอ", "ตกลง", "กับ", "ผู้จัดการ"],
+          "english": "She agrees with the manager",
+          "hints": ["she", "agree", "with", "manager"],
+          "difficulty": "intermediate"
+        },
+        {
+          "thai": ["ยุ่งยาก", "มาก", "เลย"],
+          "english": "It's so complicated",
+          "hints": ["complicated", "very", "so"],
+          "difficulty": "beginner"
+        }
+      ]
+    },
+    "food_and_flavor": {
+      "id": "food_and_flavor",
+      "name": "Food and Flavor",
+      "description": "Food, flavor, and kitchen talk",
+      "sentences": [
+        {
+          "thai": ["กะทิ", "กลมกล่อม"],
+          "english": "The coconut milk is flavorful",
+          "hints": ["coconut milk", "flavorful"],
+          "difficulty": "beginner"
+        },
+        {
+          "thai": ["ขนม", "เละ", "ไป", "หน่อย"],
+          "english": "The dessert is a bit mushy",
+          "hints": ["dessert", "mushy", "a bit"],
+          "difficulty": "intermediate"
+        },
+        {
+          "thai": ["เลือก", "เทคนิค", "ใหม่"],
+          "english": "Choose a new technique",
+          "hints": ["choose", "technique", "new"],
+          "difficulty": "intermediate"
+        },
+        {
+          "thai": ["แถม", "ของขวัญ", "ให้", "ฟรี"],
+          "english": "Give a gift for free",
+          "hints": ["give", "gift", "for free"],
+          "difficulty": "beginner"
+        }
+      ]
+    },
+    "miscellaneous": {
+      "id": "miscellaneous",
+      "name": "Miscellaneous",
+      "description": "Other useful expressions",
+      "sentences": [
+        {
+          "thai": ["แล้วแต่", "ผู้จัดการ"],
+          "english": "It's up to the manager",
+          "hints": ["depends on", "manager"],
+          "difficulty": "beginner"
+        },
+        {
+          "thai": ["นอกจากนี้", "ยัง", "มี", "ชนิด", "อื่น"],
+          "english": "Besides this, there are other types",
+          "hints": ["besides", "there are", "other", "types"],
+          "difficulty": "advanced"
+        },
+        {
+          "thai": ["ยกเว้น", "วันหยุด", "ท่อ", "ไหล", "ตลอด"],
+          "english": "Except holidays, the pipe always flows",
+          "hints": ["except", "holiday", "pipe", "flow", "always"],
+          "difficulty": "advanced"
+        }
+      ]
+    }
+  }
+}
+
+

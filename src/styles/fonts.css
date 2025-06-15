@@ -1,0 +1,59 @@
+/* Thai Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+Thai:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Charm:wght@400;700&display=swap');
+
+/* Global Thai Text Styles */
+body {
+  font-family: 'Noto Sans Thai', sans-serif;
+}
+
+/* Font Classes */
+.font-1 {
+  font-family: 'Noto Sans Thai', sans-serif !important;
+}
+
+.font-2 {
+  font-family: 'Noto Serif Thai', serif !important;
+}
+
+.font-3 {
+  font-family: 'Sarabun', sans-serif !important;
+}
+
+.font-4 {
+  font-family: 'Charm', cursive !important;
+}
+
+/* Thai Text Styles */
+.thai-text {
+  font-size: 1.3rem !important;
+  font-weight: 600 !important;
+  line-height: 1.6 !important;
+  color: white !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+.thai-word {
+  font-size: 1.1rem !important;
+  font-weight: 500 !important;
+  color: white !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+.thai-sentence {
+  font-size: 1.3rem !important;
+  font-weight: 600 !important;
+  line-height: 1.6 !important;
+  color: white !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* English Text Styles */
+.english-text {
+  font-size: 1.2rem !important;
+  font-weight: 500 !important;
+  line-height: 1.5 !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+} 
