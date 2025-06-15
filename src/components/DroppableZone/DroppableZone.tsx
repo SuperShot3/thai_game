@@ -1,77 +1,112 @@
 import React from 'react';
-import { useDrop } from 'react-dnd';
 import styled from 'styled-components';
 
 interface DroppableZoneProps {
-  index: number;
-  onDrop: (word: string) => void;
-  onRemove: () => void;
+  onDrop: (e: React.DragEvent<HTMLDivElement>) => void;
+  onWordRemove: () => void;
   word: string;
   isComplete: boolean;
   isCorrect: boolean;
-  fontClass: string;
+  children?: React.ReactNode;
 }
 
-const DropZone = styled.div<{ isOver: boolean; isComplete: boolean; isCorrect: boolean }>`
-  width: 100px;
-  height: 50px;
-  border: 2px dashed ${props => {
-    if (props.isComplete) {
-      return props.isCorrect ? '#2ecc71' : '#e74c3c';
-    }
-    return props.isOver ? '#3498db' : 'rgba(255, 255, 255, 0.2)';
+const DropZone = styled.div<{ 
+  hasWord: boolean;
+  isComplete: boolean;
+  isCorrect: boolean;
+}>`
+  min-width: 100px;
+  min-height: 50px;
+  border: 2px dashed ${({ hasWord, isComplete, isCorrect }) => {
+    if (isComplete) return isCorrect ? '#4CAF50' : '#f44336';
+    if (hasWord) return 'rgba(255, 255, 255, 0.5)';
+    return 'rgba(255, 255, 255, 0.2)';
   }};
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 10px;
   margin: 5px;
-  background: ${props => props.isOver ? 'rgba(52, 152, 219, 0.1)' : 'transparent'};
+  background: ${({ hasWord, isComplete, isCorrect }) => {
+    if (isComplete) return isCorrect ? 'rgba(76, 175, 80, 0.1)' : 'rgba(244, 67, 54, 0.1)';
+    if (hasWord) return 'rgba(255, 255, 255, 0.05)';
+    return 'transparent';
+  }};
   transition: all 0.2s ease;
   cursor: pointer;
   position: relative;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.05);
-  }
-
-  &:active {
-    transform: scale(0.98);
+    background: ${({ hasWord, isComplete }) => {
+      if (isComplete) return 'rgba(255, 255, 255, 0.05)';
+      if (hasWord) return 'rgba(255, 255, 255, 0.1)';
+      return 'rgba(255, 255, 255, 0.05)';
+    }};
+    transform: ${({ hasWord }) => hasWord ? 'none' : 'scale(1.02)'};
   }
 `;
 
-const DroppableZone: React.FC<DroppableZoneProps> = ({ 
-  index, 
-  onDrop, 
-  onRemove,
-  word, 
-  isComplete, 
-  isCorrect,
-  fontClass 
-}) => {
-  const [{ isOver }, drop] = useDrop({
-    accept: 'WORD',
-    drop: (item: { word: string }) => onDrop(item.word),
-    collect: (monitor) => ({
-      isOver: monitor.isOver(),
-    }),
-  });
+const WordText = styled.span<{ isComplete: boolean; isCorrect: boolean }>`
+  color: ${({ isComplete, isCorrect }) => {
+    if (isComplete) return isCorrect ? '#4CAF50' : '#f44336';
+    return 'rgba(255, 255, 255, 0.9)';
+  }};
+  font-size: 1.1rem;
+  transition: color 0.2s ease;
+`;
 
-  const handleClick = () => {
-    if (word && !isComplete) {
-      onRemove();
-    }
+const RemoveButton = styled.button`
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #f44336;
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  padding: 0;
+
+  &:hover {
+    background: #d32f2f;
+  }
+`;
+
+const DroppableZone: React.FC<DroppableZoneProps> = ({
+  onDrop,
+  onWordRemove,
+  word,
+  isComplete,
+  isCorrect,
+  children
+}) => {
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
   };
 
   return (
     <DropZone
-      ref={drop}
-      isOver={isOver}
+      onDrop={onDrop}
+      onDragOver={handleDragOver}
+      hasWord={!!word}
       isComplete={isComplete}
       isCorrect={isCorrect}
-      onClick={handleClick}
     >
-      <span className={`thai-word ${fontClass}`}>{word}</span>
+      <WordText isComplete={isComplete} isCorrect={isCorrect}>
+        {children}
+      </WordText>
+      {word && !isComplete && (
+        <RemoveButton onClick={onWordRemove}>×</RemoveButton>
+      )}
     </DropZone>
   );
 };

@@ -1,45 +1,36 @@
-import { Difficulty, ThaiSentence } from '../types';
 import { sentences } from '../data/sentences';
+import { ThaiSentence } from '../types';
 
-// Get all sentences for a specific difficulty level
-const getSentencesByDifficulty = (difficulty: Difficulty): ThaiSentence[] => {
-  const allSentences: ThaiSentence[] = [];
-  
-  Object.values(sentences.collections).forEach(collection => {
-    collection.sentences.forEach(sentence => {
-      if (sentence.difficulty === difficulty) {
-        allSentences.push(sentence);
-      }
-    });
-  });
-  
-  return allSentences;
+type DifficultyLevel = 'beginner' | 'intermediate' | 'advanced';
+type CategoryKey = 'simple_sentences' | 'intermediate_sentences' | 'advanced_sentences';
+
+const difficultyMap: Record<DifficultyLevel, CategoryKey> = {
+  'beginner': 'simple_sentences',
+  'intermediate': 'intermediate_sentences',
+  'advanced': 'advanced_sentences'
 };
 
-export const generateSentence = (difficulty: Difficulty, currentSentence?: ThaiSentence): ThaiSentence => {
-  const sentences = getSentencesByDifficulty(difficulty);
-  
-  // If there's only one sentence in the difficulty level, return it
-  if (sentences.length === 1) {
-    return sentences[0];
+export const generateSentence = (difficulty: DifficultyLevel): ThaiSentence => {
+  const allSentences: ThaiSentence[] = [];
+  const targetCategory = difficultyMap[difficulty];
+  const categorySentences = sentences[targetCategory].sentences;
+
+  // Add all sentences from the matching difficulty category
+  categorySentences.forEach((sentence: ThaiSentence) => {
+    allSentences.push(sentence);
+  });
+
+  if (allSentences.length === 0) {
+    throw new Error(`No sentences found for difficulty level: ${difficulty}`);
   }
 
-  // If we have a current sentence, find a different one
-  if (currentSentence) {
-    const availableSentences = sentences.filter(s => 
-      s.thai.join('') !== currentSentence.thai.join('')
-    );
-    const randomIndex = Math.floor(Math.random() * availableSentences.length);
-    return availableSentences[randomIndex];
-  }
-
-  // If no current sentence, return a random one
-  const randomIndex = Math.floor(Math.random() * sentences.length);
-  return sentences[randomIndex];
+  // Randomly select a sentence from the filtered list
+  const randomIndex = Math.floor(Math.random() * allSentences.length);
+  return allSentences[randomIndex];
 };
 
 // TODO: Implement GPT integration
-export const generateSentenceWithGPT = async (difficulty: Difficulty): Promise<ThaiSentence> => {
+export const generateSentenceWithGPT = async (difficulty: DifficultyLevel): Promise<ThaiSentence> => {
   // This will be implemented later with GPT API
   return generateSentence(difficulty);
 }; 

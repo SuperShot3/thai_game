@@ -1,9 +1,10 @@
-export type Difficulty = 'beginner' | 'intermediate' | 'advanced' | 'easy';
+export type Difficulty = 'beginner' | 'intermediate' | 'advanced';
 
 export interface ThaiSentence {
   thai: string[];
+  thaiWords: string[];
   english: string;
-  hints?: string[];
+  hints: string[];
   difficulty: Difficulty;
 }
 
@@ -41,10 +42,10 @@ export interface GameBoardProps {
 }
 
 export interface DifficultyProgress {
+  easy: number;
   beginner: number;
   intermediate: number;
   advanced: number;
-  easy: number;
 }
 
 export interface DifficultySelectorProps {

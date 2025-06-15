@@ -3,6 +3,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+Thai:wght@400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Charm:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Mitr:wght@200;300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Kanit:wght@200;300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Prompt:wght@200;300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Taviraj:wght@100;200;300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Pridi:wght@200;300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Sriracha&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Mali:wght@200;300;400;500;600;700&display=swap');
 
 /* Global Thai Text Styles */
 body {
@@ -24,6 +31,34 @@ body {
 
 .font-4 {
   font-family: 'Charm', cursive !important;
+}
+
+.font-5 {
+  font-family: 'Mitr', sans-serif !important;
+}
+
+.font-6 {
+  font-family: 'Kanit', sans-serif !important;
+}
+
+.font-7 {
+  font-family: 'Prompt', sans-serif !important;
+}
+
+.font-8 {
+  font-family: 'Taviraj', serif !important;
+}
+
+.font-9 {
+  font-family: 'Pridi', serif !important;
+}
+
+.font-10 {
+  font-family: 'Sriracha', cursive !important;
+}
+
+.font-11 {
+  font-family: 'Mali', cursive !important;
 }
 
 /* Thai Text Styles */
