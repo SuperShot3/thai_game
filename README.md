@@ -10,6 +10,49 @@ An interactive educational game designed to help learners practice Thai language
 - English translations for learning support
 - Mobile-friendly design
 
+## Running with Docker
+
+### Prerequisites
+- Docker installed on your system
+- Git (optional, if you want to clone the repository)
+
+### Quick Start with Docker
+
+1. Clone the repository:
+```bash
+git clone https://github.com/SuperShot3/thai_game.git
+cd thai_game
+```
+
+2. Start the application using Docker Compose:
+```bash
+docker-compose up
+```
+
+3. Open your browser and navigate to:
+```
+http://localhost:4444
+```
+
+### Alternative Docker Method
+
+If you prefer not to use Docker Compose, you can run the application directly with Docker:
+
+```bash
+# Build the Docker image
+docker build -t thai-game .
+
+# Run the container
+docker run -p 4444:3000 thai-game
+```
+
+### Stopping the Application
+
+To stop the application, press `Ctrl+C` in the terminal where Docker is running, or run:
+```bash
+docker-compose down
+```
+
 ## Getting Started
 
 ### Prerequisites
