@@ -46,15 +46,6 @@ const AdManager: React.FC<AdManagerProps> = ({ isCommercialMode, onToggleCommerc
   const [adInterval, setAdInterval] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    // Initialize AdSense
-    const loadAdSense = () => {
-      try {
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-      } catch (err) {
-        console.error('AdSense error:', err);
-      }
-    };
-
     // Load AdSense script
     const script = document.createElement('script');
     script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js';
@@ -67,7 +58,7 @@ const AdManager: React.FC<AdManagerProps> = ({ isCommercialMode, onToggleCommerc
         clearInterval(adInterval);
       }
     };
-  }, []);
+  }, [adInterval]);
 
   useEffect(() => {
     if (isCommercialMode) {
@@ -85,7 +76,7 @@ const AdManager: React.FC<AdManagerProps> = ({ isCommercialMode, onToggleCommerc
       clearInterval(adInterval);
       setAdInterval(null);
     }
-  }, [isCommercialMode]);
+  }, [isCommercialMode, adInterval]);
 
   return (
     <>

@@ -2,11 +2,10 @@ import { Difficulty } from '../types';
 import { LeaderboardEntry } from '../types/leaderboard';
 
 type ProgressData = {
-  completionTime: number;
   totalTime: number;
   timestamp: number;
-  completedSentences: number;
-  requiredSentences: number;
+  correctWords: number;
+  incorrectWords: number;
 };
 
 type UserProgress = {
@@ -18,8 +17,6 @@ interface User {
   email: string;
   progress: UserProgress;
 }
-
-const REQUIRED_SENTENCES = 5;
 
 class UserService {
   private currentUser: User | null = null;
@@ -61,25 +58,22 @@ class UserService {
       email,
       progress: {
         beginner: {
-          completionTime: 0,
           totalTime: 0,
           timestamp: Date.now(),
-          completedSentences: 0,
-          requiredSentences: REQUIRED_SENTENCES
+          correctWords: 0,
+          incorrectWords: 0
         },
         intermediate: {
-          completionTime: 0,
           totalTime: 0,
           timestamp: Date.now(),
-          completedSentences: 0,
-          requiredSentences: REQUIRED_SENTENCES
+          correctWords: 0,
+          incorrectWords: 0
         },
         advanced: {
-          completionTime: 0,
           totalTime: 0,
           timestamp: Date.now(),
-          completedSentences: 0,
-          requiredSentences: REQUIRED_SENTENCES
+          correctWords: 0,
+          incorrectWords: 0
         }
       }
     };
@@ -96,16 +90,21 @@ class UserService {
     return this.currentUser;
   }
 
-  updateProgress(difficulty: Difficulty, completionTime: number): ProgressData | null {
+  updateProgress(difficulty: Difficulty, isCorrect: boolean): ProgressData | null {
     if (!this.currentUser) return null;
 
     const progress = this.currentUser.progress[difficulty];
-    progress.completedSentences += 1;
-    progress.completionTime = completionTime;
-    progress.totalTime += completionTime - progress.timestamp;
-    progress.timestamp = completionTime;
+    const currentTime = Date.now();
+    
+    if (isCorrect) {
+      progress.correctWords += 1;
+    } else {
+      progress.incorrectWords += 1;
+    }
+    
+    progress.totalTime += currentTime - progress.timestamp;
+    progress.timestamp = currentTime;
 
-    this.currentUser.progress = this.currentUser.progress;
     this.saveUser();
     return progress;
   }
@@ -118,7 +117,7 @@ class UserService {
   isLevelComplete(difficulty: Difficulty): boolean {
     if (!this.currentUser) return false;
     const progress = this.currentUser.progress[difficulty];
-    return progress.completedSentences >= progress.requiredSentences;
+    return progress.correctWords >= 5; // Complete after 5 correct sentences
   }
 
   getNextLevel(currentLevel: Difficulty): Difficulty | null {

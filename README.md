@@ -43,7 +43,7 @@ If you prefer not to use Docker Compose, you can run the application directly wi
 docker build -t thai-game .
 
 # Run the container
-docker run -p 4444:3000 thai-game
+docker run -p 4444:4444 thai-game
 ```
 
 ### Stopping the Application

@@ -48,18 +48,25 @@ const App: React.FC = () => {
 
   useEffect(() => {
     // Initialize progress from user service
-    const difficulties: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
-    const newProgress = { ...progress };
-    
-    difficulties.forEach(diff => {
-      const userProgress = userService.getProgress(diff);
+    calculateProgress();
+  }, []);
+
+  const calculateProgress = () => {
+    const newProgress: { [key in Difficulty]: number } = {
+      beginner: 0,
+      intermediate: 0,
+      advanced: 0
+    };
+
+    Object.keys(newProgress).forEach((diff) => {
+      const userProgress = userService.getProgress(diff as Difficulty);
       if (userProgress) {
-        newProgress[diff] = (userProgress.completedSentences / userProgress.requiredSentences) * 100;
+        newProgress[diff as Difficulty] = (userProgress.correctWords / 5) * 100; // 5 is the target for level completion
       }
     });
-    
+
     setProgress(newProgress);
-  }, []);
+  };
 
   const handleUserSubmit = (userData: { name: string; email: string }) => {
     userService.setUser(userData.name, userData.email);
@@ -80,31 +87,31 @@ const App: React.FC = () => {
   };
 
   const handleLevelComplete = () => {
-    const completionTime = Date.now();
-    const updatedProgress = userService.updateProgress(difficulty, completionTime);
+    const updatedProgress = userService.updateProgress(difficulty, true);
     
     if (updatedProgress) {
-      const newProgressPercentage = (updatedProgress.completedSentences / updatedProgress.requiredSentences) * 100;
+      const newProgressPercentage = (updatedProgress.correctWords / 5) * 100; // 5 is the target for level completion
       
       setProgress(prev => ({
         ...prev,
         [difficulty]: newProgressPercentage
       }));
 
-      if (userService.isLevelComplete(difficulty)) {
+      if (newProgressPercentage >= 100) {
         const nextLevel = userService.getNextLevel(difficulty);
         if (nextLevel) {
-          setDialogMessage(`Congratulations! You've completed the ${difficulty} level! Moving to ${nextLevel}...`);
           setDifficulty(nextLevel);
+          setDialogMessage('Level completed! Moving to the next level.');
+          setDialogType('success');
         } else {
-          setDialogMessage("Congratulations! You've completed all levels!");
+          setDialogMessage('Congratulations! You have completed all levels!');
+          setDialogType('success');
         }
       } else {
-        const remaining = updatedProgress.requiredSentences - updatedProgress.completedSentences;
+        const remaining = 5 - updatedProgress.correctWords;
         setDialogMessage(`Great job! ${remaining} more sentences to complete this level.`);
+        setDialogType('success');
       }
-      
-      setDialogType('success');
       setShowDialog(true);
     }
   };
@@ -124,10 +131,10 @@ const App: React.FC = () => {
     return lockedLevels;
   };
 
-  const getCurrentProgress = () => {
+  const getProgressText = () => {
     const userProgress = userService.getProgress(difficulty);
     if (userProgress) {
-      return `${userProgress.completedSentences} / ${userProgress.requiredSentences} sentences completed`;
+      return `${userProgress.correctWords} / 5 sentences completed`;
     }
     return '';
   };
@@ -145,7 +152,7 @@ const App: React.FC = () => {
     <DndProvider backend={HTML5Backend}>
       <AppContainer>
         <Title>Thai Sentence Builder</Title>
-        <ProgressText>{getCurrentProgress()}</ProgressText>
+        <ProgressText>{getProgressText()}</ProgressText>
         <DifficultySelector
           currentDifficulty={difficulty}
           progress={progress}

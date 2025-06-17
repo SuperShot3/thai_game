@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { TouchBackend } from 'react-dnd-touch-backend';
 import styled from 'styled-components';
 import { Difficulty, ThaiSentence } from '../../types';
-import { generateSentence } from '../../services/sentenceGenerator';
+import { generateSentence, resetUsedSentences } from '../../services/sentenceGenerator';
 import DraggableWord from '../DraggableWord/DraggableWord';
 import DroppableZone from '../DroppableZone/DroppableZone';
+import GameCompletionDialog from '../GameCompletionDialog/GameCompletionDialog';
 import '../../styles/fonts.css';
 import Dialog from '../Dialog/Dialog';
+import { userService } from '../../services/userService';
 
 const GameBoardContainer = styled.div`
   display: flex;
@@ -146,78 +148,6 @@ const Button = styled.button<{ variant?: 'primary' | 'secondary' | 'danger' }>`
   }
 `;
 
-const ThaiText = styled.span`
-  font-family: 'Noto Sans Thai', sans-serif;
-  font-size: 1.2rem;
-  line-height: 1.5;
-`;
-
-const DropZone = styled.div<{ isOver: boolean }>`
-  width: 100px;
-  height: 40px;
-  border: 2px dashed ${props => props.isOver ? '#3498db' : '#ddd'};
-  border-radius: 5px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: ${props => props.isOver ? '#f0f7ff' : 'white'};
-  transition: all 0.3s ease;
-`;
-
-const WordCard = styled.div<{ isDragging: boolean }>`
-  padding: 8px 16px;
-  background: ${props => props.isDragging ? '#3498db' : 'white'};
-  color: ${props => props.isDragging ? 'white' : '#2c3e50'};
-  border: 2px solid #3498db;
-  border-radius: 5px;
-  cursor: move;
-  user-select: none;
-  transition: all 0.3s ease;
-
-  &:hover {
-    background: #3498db;
-    color: white;
-  }
-`;
-
-const ResultContainer = styled.div`
-  margin-top: 20px;
-  padding: 15px;
-  border-radius: 8px;
-  text-align: center;
-  background: rgba(255, 255, 255, 0.1);
-  animation: fadeIn 0.3s ease-in;
-`;
-
-const ConfirmDialog = styled.div`
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: #1a1a2e;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  z-index: 1000;
-  text-align: center;
-  border: 2px solid rgba(255, 255, 255, 0.1);
-`;
-
-const Overlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  z-index: 999;
-`;
-
-const DialogButton = styled(Button)`
-  margin: 10px;
-  min-width: 100px;
-`;
-
 interface WordState {
   word: string;
   isInUse: boolean;
@@ -233,11 +163,6 @@ const shuffleArray = <T,>(array: T[]): T[] => {
   return shuffled;
 };
 
-// Helper function to detect if the device is touch-enabled
-const isTouchDevice = () => {
-  return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-};
-
 interface GameBoardProps {
   difficulty: Difficulty;
   onLevelComplete: (difficulty: Difficulty) => void;
@@ -250,9 +175,15 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
   const [isComplete, setIsComplete] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
+  const [showCompletionDialog, setShowCompletionDialog] = useState(false);
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   const [showHint, setShowHint] = useState(false);
   const [currentFont, setCurrentFont] = useState('font-1');
+  const [currentHintIndex, setCurrentHintIndex] = useState(0);
+  const [correctWords, setCorrectWords] = useState(0);
+  const [incorrectWords, setIncorrectWords] = useState(0);
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const startTimeRef = useRef(Date.now());
 
   const getRandomFont = () => {
     const fonts = [
@@ -271,22 +202,29 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     return fonts[Math.floor(Math.random() * fonts.length)];
   };
 
-  useEffect(() => {
-    generateNewSentence();
-  }, [difficulty]);
-
-  const generateNewSentence = () => {
-    const sentence = generateSentence(difficulty);
-    setCurrentSentence(sentence);
+  const generateNewSentence = useCallback(() => {
+    const newSentence = generateSentence(difficulty);
+    setCurrentSentence(newSentence);
     setCurrentFont(getRandomFont());
-    const words = sentence.thaiWords.map((word: string) => ({ word, isInUse: false }));
-    setShuffledWords(shuffleArray(words));
-    setUserAnswer(Array(sentence.thaiWords.length).fill(''));
+    setShuffledWords(shuffleArray(newSentence.thaiWords.map(word => ({ word, isInUse: false }))));
+    setUserAnswer([]);
     setIsComplete(false);
     setIsCorrect(false);
     setShowDialog(false);
     setShowHint(false);
-  };
+  }, [difficulty]);
+
+  useEffect(() => {
+    generateNewSentence();
+    startTimeRef.current = Date.now();
+    const timer = setInterval(() => {
+      const now = Date.now();
+      const elapsed = Math.floor((now - startTimeRef.current) / 1000);
+      setElapsedTime(elapsed);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [difficulty, generateNewSentence]);
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>, position: number) => {
     if (isComplete) return;
@@ -331,16 +269,34 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
   const checkAnswer = () => {
     if (!currentSentence) return;
 
-    const isCorrect = userAnswer.every((word, index) => word === currentSentence.thaiWords[index]);
-    if (isCorrect) {
-      setIsComplete(true);
-      setIsCorrect(true);
-      onLevelComplete(difficulty);
-    } else {
-      setIsComplete(true);
-      setIsCorrect(false);
-    }
+    const isAnswerCorrect = userAnswer.join('') === currentSentence.thaiWords.join('');
+    setIsCorrect(isAnswerCorrect);
+    setIsComplete(true);
     setShowDialog(true);
+
+    if (isAnswerCorrect) {
+      setCorrectWords(prev => prev + 1);
+      const user = userService.getUser();
+      if (user) {
+        userService.updateProgress(difficulty, true);
+        
+        if (userService.isLevelComplete(difficulty)) {
+          const nextLevel = userService.getNextLevel(difficulty);
+          if (!nextLevel) {
+            // All levels completed
+            const progress = userService.getProgress(difficulty);
+            if (progress) {
+              setShowCompletionDialog(true);
+            }
+          } else {
+            onLevelComplete(difficulty);
+          }
+        }
+      }
+    } else {
+      setIncorrectWords(prev => prev + 1);
+      userService.updateProgress(difficulty, false);
+    }
   };
 
   const handleClear = () => {
@@ -368,7 +324,31 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
   };
 
   const toggleHint = () => {
-    setShowHint(!showHint);
+    if (showHint) {
+      setShowHint(false);
+      setCurrentHintIndex(0);
+    } else {
+      setShowHint(true);
+    }
+  };
+
+  const showNextHint = () => {
+    if (currentSentence && currentHintIndex < currentSentence.hints.length - 1) {
+      setCurrentHintIndex(prev => prev + 1);
+    }
+  };
+
+  const handleRestart = () => {
+    setShowCompletionDialog(false);
+    setCorrectWords(0);
+    setIncorrectWords(0);
+    userService.clearUser();
+    window.location.reload();
+  };
+
+  const handleClose = () => {
+    setShowCompletionDialog(false);
+    window.location.href = '/';
   };
 
   if (!currentSentence) return null;
@@ -378,11 +358,20 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
       <GameBoardContainer>
         <SentenceContainer>
           <EnglishText>
-            {showHint ? currentSentence.english : 'Click hint to see the English translation'}
+            {showHint 
+              ? currentSentence.hints[currentHintIndex]
+              : 'Click hint to see word hints'}
           </EnglishText>
-          <HintButton onClick={toggleHint}>
-            {showHint ? 'Hide Hint' : 'Show Hint'}
-          </HintButton>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <HintButton onClick={toggleHint}>
+              {showHint ? 'Hide Hint' : 'Show Hint'}
+            </HintButton>
+            {showHint && currentSentence.hints.length > 1 && (
+              <HintButton onClick={showNextHint}>
+                Next Hint
+              </HintButton>
+            )}
+          </div>
         </SentenceContainer>
         
         <AnswerContainer>
@@ -438,6 +427,17 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
               "Try again! Your answer is not quite right."}
             type={isCorrect ? 'success' : 'error'}
             onClose={handleTryAgain}
+          />
+        )}
+
+        {showCompletionDialog && (
+          <GameCompletionDialog
+            onClose={handleClose}
+            onRestart={handleRestart}
+            score={correctWords * 10}
+            correctWords={correctWords}
+            incorrectWords={incorrectWords}
+            difficulty={difficulty}
           />
         )}
       </GameBoardContainer>

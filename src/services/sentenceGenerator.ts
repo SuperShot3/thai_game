@@ -1,36 +1,41 @@
+import { Difficulty, ThaiSentence } from '../types';
 import { sentences } from '../data/sentences';
-import { ThaiSentence } from '../types';
 
-type DifficultyLevel = 'beginner' | 'intermediate' | 'advanced';
-type CategoryKey = 'simple_sentences' | 'intermediate_sentences' | 'advanced_sentences';
-
-const difficultyMap: Record<DifficultyLevel, CategoryKey> = {
-  'beginner': 'simple_sentences',
-  'intermediate': 'intermediate_sentences',
-  'advanced': 'advanced_sentences'
+const usedSentences: { [key in Difficulty]: Set<string> } = {
+  beginner: new Set(),
+  intermediate: new Set(),
+  advanced: new Set()
 };
 
-export const generateSentence = (difficulty: DifficultyLevel): ThaiSentence => {
-  const allSentences: ThaiSentence[] = [];
-  const targetCategory = difficultyMap[difficulty];
-  const categorySentences = sentences[targetCategory].sentences;
+export const resetUsedSentences = (difficulty: Difficulty) => {
+  usedSentences[difficulty].clear();
+};
 
-  // Add all sentences from the matching difficulty category
-  categorySentences.forEach((sentence: ThaiSentence) => {
-    allSentences.push(sentence);
-  });
+export const generateSentence = (difficulty: Difficulty): ThaiSentence => {
+  const categoryKey = difficulty === 'beginner' ? 'simple_sentences' :
+    difficulty === 'intermediate' ? 'intermediate_sentences' : 'advanced_sentences';
+  const categorySentences = sentences[categoryKey].sentences;
 
-  if (allSentences.length === 0) {
-    throw new Error(`No sentences found for difficulty level: ${difficulty}`);
+  // Filter out already used sentences
+  const availableSentences = categorySentences.filter(
+    (sentence: ThaiSentence) => !usedSentences[difficulty].has(sentence.english)
+  );
+
+  // If all sentences have been used, reset the used sentences for this difficulty
+  if (availableSentences.length === 0) {
+    resetUsedSentences(difficulty);
+    return generateSentence(difficulty);
   }
 
-  // Randomly select a sentence from the filtered list
-  const randomIndex = Math.floor(Math.random() * allSentences.length);
-  return allSentences[randomIndex];
+  // Select a random sentence from available ones
+  const selectedSentence = availableSentences[Math.floor(Math.random() * availableSentences.length)];
+  usedSentences[difficulty].add(selectedSentence.english);
+
+  return selectedSentence;
 };
 
 // TODO: Implement GPT integration
-export const generateSentenceWithGPT = async (difficulty: DifficultyLevel): Promise<ThaiSentence> => {
+export const generateSentenceWithGPT = async (difficulty: Difficulty): Promise<ThaiSentence> => {
   // This will be implemented later with GPT API
   return generateSentence(difficulty);
 }; 

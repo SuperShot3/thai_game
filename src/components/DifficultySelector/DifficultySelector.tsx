@@ -38,6 +38,7 @@ const DifficultyButton = styled.button<{ isSelected: boolean; isLocked: boolean 
     if (props.isSelected) return '#2196f3';
     return '#ced4da';
   }};
+  overflow: hidden;
 
   &:hover:not(:disabled) {
     background-color: ${props => {
@@ -48,11 +49,17 @@ const DifficultyButton = styled.button<{ isSelected: boolean; isLocked: boolean 
   }
 `;
 
-const ProgressBar = styled.div<{ progress: number }>`
+const ProgressBarContainer = styled.div`
   position: absolute;
   bottom: 0;
   left: 0;
+  right: 0;
   height: 3px;
+  background-color: rgba(0, 0, 0, 0.1);
+`;
+
+const ProgressBar = styled.div<{ progress: number }>`
+  height: 100%;
   background-color: #4caf50;
   width: ${props => props.progress}%;
   transition: width 0.3s ease;
@@ -85,7 +92,9 @@ export const DifficultySelector: React.FC<DifficultySelectorProps> = ({
           >
             {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
             {isLocked && <LockIcon>🔒</LockIcon>}
-            <ProgressBar progress={progress[difficulty]} />
+            <ProgressBarContainer>
+              <ProgressBar progress={progress[difficulty]} />
+            </ProgressBarContainer>
           </DifficultyButton>
         );
       })}
