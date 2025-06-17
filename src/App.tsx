@@ -3,21 +3,35 @@ import styled from 'styled-components';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import GameBoard from './components/GameBoard/GameBoard';
-import { DifficultySelector } from './components/DifficultySelector/DifficultySelector';
+import Welcome from './components/Welcome/Welcome';
 import AdManager from './components/Ads/AdManager';
 import { userService } from './services/userService';
 import { Difficulty } from './types';
 import UserForm from './components/UserForm/UserForm';
-import Leaderboard from './components/Leaderboard/Leaderboard';
 import Dialog from './components/Dialog/Dialog';
 
 const AppContainer = styled.div`
   min-height: 100vh;
+  height: 100vh;
+  width: 100vw;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 2rem;
+  padding: 1rem;
   background: #f8f9fa;
+  overflow: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  touch-action: none;
+  -webkit-overflow-scrolling: none;
+  overscroll-behavior: none;
+
+  @media (max-width: 768px) {
+    padding: 0.5rem;
+  }
 `;
 
 const Title = styled.h1`
@@ -45,9 +59,9 @@ const App: React.FC = () => {
   const [dialogMessage, setDialogMessage] = useState('');
   const [dialogType, setDialogType] = useState<'success' | 'error'>('success');
   const [isCommercialMode, setIsCommercialMode] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
-    // Initialize progress from user service
     calculateProgress();
   }, [difficulty]);
 
@@ -61,7 +75,7 @@ const App: React.FC = () => {
     Object.keys(newProgress).forEach((diff) => {
       const userProgress = userService.getProgress(diff as Difficulty);
       if (userProgress) {
-        newProgress[diff as Difficulty] = (userProgress.correctWords / 5) * 100; // 5 is the target for level completion
+        newProgress[diff as Difficulty] = (userProgress.correctWords / 5) * 100;
       }
     });
 
@@ -78,8 +92,9 @@ const App: React.FC = () => {
     setShowUserForm(false);
   };
 
-  const handleLevelSelect = (selectedDifficulty: Difficulty) => {
+  const handleStartGame = (selectedDifficulty: Difficulty) => {
     setDifficulty(selectedDifficulty);
+    setIsPlaying(true);
   };
 
   const handleToggleCommercialMode = () => {
@@ -91,7 +106,7 @@ const App: React.FC = () => {
     
     const userProgress = userService.getProgress(difficulty);
     if (userProgress) {
-      const newProgressPercentage = (userProgress.correctWords / 5) * 100; // 5 is the target for level completion
+      const newProgressPercentage = (userProgress.correctWords / 5) * 100;
       
       setProgress(prev => ({
         ...prev,
@@ -149,23 +164,29 @@ const App: React.FC = () => {
     );
   }
 
+  if (!isPlaying) {
+    return (
+      <AppContainer>
+        <Welcome
+          onStartGame={handleStartGame}
+          currentDifficulty={difficulty}
+          progress={progress}
+          lockedLevels={getLockedLevels()}
+        />
+      </AppContainer>
+    );
+  }
+
   return (
     <DndProvider backend={HTML5Backend}>
       <AppContainer>
         <Title>Thai Sentence Builder</Title>
         <ProgressText>{getProgressText()}</ProgressText>
-        <DifficultySelector
-          currentDifficulty={difficulty}
-          progress={progress}
-          onLevelSelect={handleLevelSelect}
-          lockedLevels={getLockedLevels()}
-        />
         <GameBoard
           difficulty={difficulty}
           onLevelComplete={handleLevelComplete}
         />
         <AdManager isCommercialMode={isCommercialMode} onToggleCommercialMode={handleToggleCommercialMode} />
-        <Leaderboard />
         {showDialog && (
           <Dialog
             message={dialogMessage}
