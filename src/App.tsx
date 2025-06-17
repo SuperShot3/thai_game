@@ -3,35 +3,21 @@ import styled from 'styled-components';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import GameBoard from './components/GameBoard/GameBoard';
-import Welcome from './components/Welcome/Welcome';
+import { DifficultySelector } from './components/DifficultySelector/DifficultySelector';
 import AdManager from './components/Ads/AdManager';
 import { userService } from './services/userService';
 import { Difficulty } from './types';
 import UserForm from './components/UserForm/UserForm';
+import Leaderboard from './components/Leaderboard/Leaderboard';
 import Dialog from './components/Dialog/Dialog';
 
 const AppContainer = styled.div`
   min-height: 100vh;
-  height: 100vh;
-  width: 100vw;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 1rem;
+  padding: 2rem;
   background: #f8f9fa;
-  overflow: hidden;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  touch-action: none;
-  -webkit-overflow-scrolling: none;
-  overscroll-behavior: none;
-
-  @media (max-width: 768px) {
-    padding: 0.5rem;
-  }
 `;
 
 const Title = styled.h1`
@@ -47,6 +33,23 @@ const ProgressText = styled.div`
   font-size: 1.1rem;
 `;
 
+const Button = styled.button`
+  padding: 0.75rem 1.5rem;
+  margin: 1rem;
+  border: none;
+  border-radius: 6px;
+  background: #4CAF50;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #45a049;
+    transform: translateY(-2px);
+  }
+`;
+
 const App: React.FC = () => {
   const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
   const [progress, setProgress] = useState<{ [key in Difficulty]: number }>({
@@ -59,9 +62,10 @@ const App: React.FC = () => {
   const [dialogMessage, setDialogMessage] = useState('');
   const [dialogType, setDialogType] = useState<'success' | 'error'>('success');
   const [isCommercialMode, setIsCommercialMode] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
 
   useEffect(() => {
+    // Initialize progress from user service
     calculateProgress();
   }, [difficulty]);
 
@@ -75,7 +79,7 @@ const App: React.FC = () => {
     Object.keys(newProgress).forEach((diff) => {
       const userProgress = userService.getProgress(diff as Difficulty);
       if (userProgress) {
-        newProgress[diff as Difficulty] = (userProgress.correctWords / 5) * 100;
+        newProgress[diff as Difficulty] = (userProgress.correctWords / 5) * 100; // 5 is the target for level completion
       }
     });
 
@@ -92,9 +96,8 @@ const App: React.FC = () => {
     setShowUserForm(false);
   };
 
-  const handleStartGame = (selectedDifficulty: Difficulty) => {
+  const handleLevelSelect = (selectedDifficulty: Difficulty) => {
     setDifficulty(selectedDifficulty);
-    setIsPlaying(true);
   };
 
   const handleToggleCommercialMode = () => {
@@ -106,7 +109,7 @@ const App: React.FC = () => {
     
     const userProgress = userService.getProgress(difficulty);
     if (userProgress) {
-      const newProgressPercentage = (userProgress.correctWords / 5) * 100;
+      const newProgressPercentage = (userProgress.correctWords / 5) * 100; // 5 is the target for level completion
       
       setProgress(prev => ({
         ...prev,
@@ -160,19 +163,13 @@ const App: React.FC = () => {
       <AppContainer>
         <Title>Thai Sentence Builder</Title>
         <UserForm onSubmit={handleUserSubmit} onSkip={handleSkip} />
-      </AppContainer>
-    );
-  }
-
-  if (!isPlaying) {
-    return (
-      <AppContainer>
-        <Welcome
-          onStartGame={handleStartGame}
-          currentDifficulty={difficulty}
-          progress={progress}
-          lockedLevels={getLockedLevels()}
-        />
+        <Button onClick={() => setShowLeaderboard(true)}>View Leaderboard</Button>
+        {showLeaderboard && (
+          <>
+            <Button onClick={() => setShowLeaderboard(false)}>Close Leaderboard</Button>
+            <Leaderboard />
+          </>
+        )}
       </AppContainer>
     );
   }
@@ -182,6 +179,12 @@ const App: React.FC = () => {
       <AppContainer>
         <Title>Thai Sentence Builder</Title>
         <ProgressText>{getProgressText()}</ProgressText>
+        <DifficultySelector
+          currentDifficulty={difficulty}
+          progress={progress}
+          onLevelSelect={handleLevelSelect}
+          lockedLevels={getLockedLevels()}
+        />
         <GameBoard
           difficulty={difficulty}
           onLevelComplete={handleLevelComplete}
