@@ -4,7 +4,7 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 import { TouchBackend } from 'react-dnd-touch-backend';
 import styled from 'styled-components';
 import { Difficulty, ThaiSentence } from '../../types';
-import { generateSentence, resetUsedSentences } from '../../services/sentenceGenerator';
+import { generateSentence } from '../../services/sentenceGenerator';
 import DraggableWord from '../DraggableWord/DraggableWord';
 import DroppableZone from '../DroppableZone/DroppableZone';
 import GameCompletionDialog from '../GameCompletionDialog/GameCompletionDialog';
@@ -269,28 +269,18 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
   const checkAnswer = () => {
     if (!currentSentence) return;
 
-    const isAnswerCorrect = userAnswer.join('') === currentSentence.thaiWords.join('');
+    const isAnswerCorrect = userAnswer.join('') === currentSentence.thai.join('');
     setIsCorrect(isAnswerCorrect);
     setIsComplete(true);
     setShowDialog(true);
 
     if (isAnswerCorrect) {
       setCorrectWords(prev => prev + 1);
-      const user = userService.getUser();
-      if (user) {
-        userService.updateProgress(difficulty, true);
-        
+      const updatedProgress = userService.updateProgress(difficulty, true);
+      if (updatedProgress) {
+        onLevelComplete(difficulty);
         if (userService.isLevelComplete(difficulty)) {
-          const nextLevel = userService.getNextLevel(difficulty);
-          if (!nextLevel) {
-            // All levels completed
-            const progress = userService.getProgress(difficulty);
-            if (progress) {
-              setShowCompletionDialog(true);
-            }
-          } else {
-            onLevelComplete(difficulty);
-          }
+          setShowCompletionDialog(true);
         }
       }
     } else {
@@ -438,6 +428,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
             correctWords={correctWords}
             incorrectWords={incorrectWords}
             difficulty={difficulty}
+            totalTime={elapsedTime}
           />
         )}
       </GameBoardContainer>

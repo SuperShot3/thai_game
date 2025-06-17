@@ -19,13 +19,21 @@ interface User {
 }
 
 class UserService {
+  private static instance: UserService;
   private currentUser: User | null = null;
   private readonly STORAGE_KEY = 'thai_game_user';
   private leaderboard: LeaderboardEntry[] = [];
 
-  constructor() {
+  private constructor() {
     this.loadUser();
     this.loadLeaderboard();
+  }
+
+  public static getInstance(): UserService {
+    if (!UserService.instance) {
+      UserService.instance = new UserService();
+    }
+    return UserService.instance;
   }
 
   private loadUser() {
@@ -41,14 +49,14 @@ class UserService {
     }
   }
 
-  private loadLeaderboard() {
+  private loadLeaderboard(): void {
     const savedLeaderboard = localStorage.getItem('leaderboard');
     if (savedLeaderboard) {
       this.leaderboard = JSON.parse(savedLeaderboard);
     }
   }
 
-  private saveLeaderboard() {
+  private saveLeaderboard(): void {
     localStorage.setItem('leaderboard', JSON.stringify(this.leaderboard));
   }
 
@@ -132,14 +140,40 @@ class UserService {
     localStorage.removeItem(this.STORAGE_KEY);
   }
 
-  getLeaderboard() {
-    return [...this.leaderboard];
+  public addToLeaderboard(entry: Omit<LeaderboardEntry, 'name'> & { name?: string }): void {
+    const name = entry.name || `Guest ${this.generateGuestNumber()}`;
+    
+    this.leaderboard = this.leaderboard.filter(e => e.name !== name);
+    
+    const newEntry: LeaderboardEntry = {
+      ...entry,
+      name
+    };
+    
+    this.leaderboard.push(newEntry);
+    this.saveLeaderboard();
   }
 
-  addToLeaderboard(entry: LeaderboardEntry) {
-    this.leaderboard.push(entry);
+  private generateGuestNumber(): number {
+    const guestEntries = this.leaderboard.filter(entry => entry.name.startsWith('Guest '));
+    if (guestEntries.length === 0) return 1;
+    
+    const numbers = guestEntries.map(entry => {
+      const num = parseInt(entry.name.split(' ')[1]);
+      return isNaN(num) ? 0 : num;
+    });
+    
+    return Math.max(...numbers) + 1;
+  }
+
+  public getLeaderboard(): LeaderboardEntry[] {
+    return this.leaderboard;
+  }
+
+  public clearLeaderboard(): void {
+    this.leaderboard = [];
     this.saveLeaderboard();
   }
 }
 
-export const userService = new UserService(); 
+export const userService = UserService.getInstance(); 

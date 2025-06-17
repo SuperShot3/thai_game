@@ -49,7 +49,7 @@ const App: React.FC = () => {
   useEffect(() => {
     // Initialize progress from user service
     calculateProgress();
-  }, []);
+  }, [difficulty]);
 
   const calculateProgress = () => {
     const newProgress: { [key in Difficulty]: number } = {
@@ -87,10 +87,11 @@ const App: React.FC = () => {
   };
 
   const handleLevelComplete = () => {
-    const updatedProgress = userService.updateProgress(difficulty, true);
+    calculateProgress();
     
-    if (updatedProgress) {
-      const newProgressPercentage = (updatedProgress.correctWords / 5) * 100; // 5 is the target for level completion
+    const userProgress = userService.getProgress(difficulty);
+    if (userProgress) {
+      const newProgressPercentage = (userProgress.correctWords / 5) * 100; // 5 is the target for level completion
       
       setProgress(prev => ({
         ...prev,
@@ -108,7 +109,7 @@ const App: React.FC = () => {
           setDialogType('success');
         }
       } else {
-        const remaining = 5 - updatedProgress.correctWords;
+        const remaining = 5 - userProgress.correctWords;
         setDialogMessage(`Great job! ${remaining} more sentences to complete this level.`);
         setDialogType('success');
       }

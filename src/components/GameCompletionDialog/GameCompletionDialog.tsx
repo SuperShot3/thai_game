@@ -1,88 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { userService } from '../../services/userService';
-import { LeaderboardEntry } from '../../types/leaderboard';
-import { Difficulty } from '../../types';
-
-const DialogOverlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.7);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-`;
-
-const DialogContent = styled.div`
-  background-color: #1a1a2e;
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  max-width: 90%;
-  width: 400px;
-  text-align: center;
-  color: white;
-  border: 2px solid rgba(255, 255, 255, 0.1);
-`;
-
-const Title = styled.h2`
-  color: #4CAF50;
-  margin-bottom: 1.5rem;
-`;
-
-const Message = styled.p`
-  margin-bottom: 1.5rem;
-  font-size: 1.1rem;
-  line-height: 1.5;
-`;
-
-const Input = styled.input`
-  width: 100%;
-  padding: 0.8rem;
-  margin-bottom: 1rem;
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.05);
-  color: white;
-  font-size: 1rem;
-
-  &:focus {
-    outline: none;
-    border-color: #4CAF50;
-  }
-`;
-
-const ButtonContainer = styled.div`
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-  margin-top: 1.5rem;
-`;
-
-const Button = styled.button<{ variant?: 'primary' | 'secondary' }>`
-  padding: 0.8rem 1.5rem;
-  border: none;
-  border-radius: 6px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  background: ${props => props.variant === 'primary' ? '#4CAF50' : '#3498db'};
-  color: white;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-  }
-
-  &:active {
-    transform: translateY(0);
-  }
-`;
+import { Difficulty } from '../../types/game';
 
 interface GameCompletionDialogProps {
   onClose: () => void;
@@ -91,93 +10,165 @@ interface GameCompletionDialogProps {
   correctWords: number;
   incorrectWords: number;
   difficulty: Difficulty;
+  totalTime: number;
 }
 
-const GameCompletionDialog: React.FC<GameCompletionDialogProps> = ({ 
-  onClose, 
-  onRestart, 
+const Dialog = styled.div`
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #1a1a2e;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  color: #ffffff;
+  width: 90%;
+  max-width: 500px;
+`;
+
+const Overlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+`;
+
+const Title = styled.h2`
+  margin: 0 0 1.5rem;
+  text-align: center;
+  color: #ffffff;
+`;
+
+const Stats = styled.div`
+  margin-bottom: 1.5rem;
+`;
+
+const Stat = styled.div`
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+`;
+
+const ButtonGroup = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+`;
+
+const Button = styled.button`
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+`;
+
+const PrimaryButton = styled(Button)`
+  background: #4CAF50;
+  color: white;
+
+  &:hover {
+    background: #45a049;
+  }
+`;
+
+const SecondaryButton = styled(Button)`
+  background: #f44336;
+  color: white;
+
+  &:hover {
+    background: #da190b;
+  }
+`;
+
+const Input = styled.input`
+  width: 100%;
+  padding: 0.75rem;
+  margin: 1rem 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  font-size: 1rem;
+
+  &:focus {
+    outline: none;
+    border-color: #4CAF50;
+  }
+`;
+
+const formatTime = (seconds: number): string => {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+};
+
+const GameCompletionDialog: React.FC<GameCompletionDialogProps> = ({
+  onClose,
+  onRestart,
   score,
   correctWords,
   incorrectWords,
-  difficulty
+  difficulty,
+  totalTime
 }) => {
   const [name, setName] = useState('');
-  const [isSubmitted, setIsSubmitted] = useState(false);
-
-  const calculateAccuracy = (correct: number, incorrect: number): number => {
-    const total = correct + incorrect;
-    if (total === 0) return 0;
-    return (correct / total) * 100;
-  };
 
   const handleSubmit = () => {
-    if (name.trim()) {
-      const user = userService.getUser();
-      if (user) {
-        const progress = userService.getProgress(difficulty);
-        if (progress) {
-          const accuracy = calculateAccuracy(correctWords, incorrectWords);
-          const entry: LeaderboardEntry = {
-            name: name.trim(),
-            email: user.email,
-            difficulty: difficulty,
-            timestamp: Date.now(),
-            points: correctWords * 10,
-            correctWords: correctWords,
-            incorrectWords: incorrectWords,
-            accuracy: accuracy,
-            totalTime: progress.totalTime
-          };
-          userService.addToLeaderboard(entry);
-          setIsSubmitted(true);
-        }
-      }
-    }
-  };
-
-  const handleRestart = () => {
-    if (name.trim() && !isSubmitted) {
-      handleSubmit();
-    }
-    onRestart();
+    userService.addToLeaderboard({
+      name,
+      correctWords,
+      incorrectWords,
+      totalTime
+    });
+    onClose();
   };
 
   return (
-    <DialogOverlay>
-      <DialogContent>
-        <Title>Congratulations! 🎉</Title>
-        <Message>
-          You have completed all levels! Your final score is {score} points.
-          <br />
-          Correct words: {correctWords}
-          <br />
-          Incorrect words: {incorrectWords}
-          <br />
-          Accuracy: {calculateAccuracy(correctWords, incorrectWords).toFixed(1)}%
-          {!isSubmitted && <br />}
-          {!isSubmitted && "Would you like to add your name to the leaderboard?"}
-        </Message>
-        
-        {!isSubmitted && (
-          <Input
-            type="text"
-            placeholder="Enter your name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            maxLength={20}
-          />
-        )}
-
-        <ButtonContainer>
-          <Button variant="primary" onClick={handleRestart}>
-            {isSubmitted ? 'Play Again' : 'Save & Play Again'}
-          </Button>
-          <Button variant="secondary" onClick={onClose}>
-            Close Game
-          </Button>
-        </ButtonContainer>
-      </DialogContent>
-    </DialogOverlay>
+    <>
+      <Overlay onClick={onClose} />
+      <Dialog>
+        <Title>Level Complete!</Title>
+        <Stats>
+          <Stat>
+            <span>Correct Words:</span>
+            <span>{correctWords}</span>
+          </Stat>
+          <Stat>
+            <span>Incorrect Words:</span>
+            <span>{incorrectWords}</span>
+          </Stat>
+          <Stat>
+            <span>Total Time:</span>
+            <span>{formatTime(totalTime)}</span>
+          </Stat>
+        </Stats>
+        <Input
+          type="text"
+          placeholder="Enter your name (optional)"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <ButtonGroup>
+          <PrimaryButton onClick={handleSubmit}>Save Score</PrimaryButton>
+          <SecondaryButton onClick={onRestart}>Play Again</SecondaryButton>
+        </ButtonGroup>
+      </Dialog>
+    </>
   );
 };
 
