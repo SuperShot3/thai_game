@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
+import styled, { createGlobalStyle } from 'styled-components';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import GameBoard from './components/GameBoard/GameBoard';
@@ -11,13 +11,51 @@ import UserForm from './components/UserForm/UserForm';
 import Leaderboard from './components/Leaderboard/Leaderboard';
 import Dialog from './components/Dialog/Dialog';
 
+const GlobalStyle = createGlobalStyle`
+  * {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html, body {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    position: fixed;
+  }
+
+  input, textarea {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+  }
+
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+`;
+
 const AppContainer = styled.div`
   min-height: 100vh;
+  height: 100vh;
+  width: 100vw;
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 2rem;
   background: #f8f9fa;
+  overflow: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
+  box-sizing: border-box;
 `;
 
 const Title = styled.h1`
@@ -160,22 +198,26 @@ const App: React.FC = () => {
 
   if (showUserForm) {
     return (
-      <AppContainer>
-        <Title>Thai Sentence Builder</Title>
-        <UserForm onSubmit={handleUserSubmit} onSkip={handleSkip} />
-        <Button onClick={() => setShowLeaderboard(true)}>View Leaderboard</Button>
-        {showLeaderboard && (
-          <>
-            <Button onClick={() => setShowLeaderboard(false)}>Close Leaderboard</Button>
-            <Leaderboard />
-          </>
-        )}
-      </AppContainer>
+      <>
+        <GlobalStyle />
+        <AppContainer>
+          <Title>Thai Sentence Builder</Title>
+          <UserForm onSubmit={handleUserSubmit} onSkip={handleSkip} />
+          <Button onClick={() => setShowLeaderboard(true)}>View Leaderboard</Button>
+          {showLeaderboard && (
+            <>
+              <Button onClick={() => setShowLeaderboard(false)}>Close Leaderboard</Button>
+              <Leaderboard />
+            </>
+          )}
+        </AppContainer>
+      </>
     );
   }
 
   return (
     <DndProvider backend={HTML5Backend}>
+      <GlobalStyle />
       <AppContainer>
         <Title>Thai Sentence Builder</Title>
         <ProgressText>{getProgressText()}</ProgressText>

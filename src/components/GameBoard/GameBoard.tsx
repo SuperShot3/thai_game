@@ -18,8 +18,14 @@ const GameBoardContainer = styled.div`
   align-items: center;
   padding: 20px;
   background: #1a1a2e;
-  min-height: 100vh;
+  height: 100vh;
+  width: 100vw;
+  position: fixed;
+  top: 0;
+  left: 0;
+  overflow: hidden;
   color: #ffffff;
+  box-sizing: border-box;
 `;
 
 const SentenceContainer = styled.div`
@@ -31,6 +37,7 @@ const SentenceContainer = styled.div`
   padding: 1rem;
   background: #f8f9fa;
   border-radius: 0.5rem;
+  box-sizing: border-box;
 `;
 
 const EnglishText = styled.div`
@@ -68,31 +75,39 @@ const WordContainer = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  margin: 20px 0;
+  margin: 10px 0;
   justify-content: center;
-  padding: 15px;
+  padding: 10px;
   background: rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+  width: 100%;
 `;
 
 const AnswerContainer = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  margin: 20px 0;
+  margin: 10px 0;
   justify-content: center;
-  min-height: 70px;
-  padding: 15px;
+  min-height: 60px;
+  padding: 10px;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+  width: 100%;
 `;
 
 const ButtonContainer = styled.div`
   display: flex;
-  gap: 15px;
-  margin-top: 20px;
+  gap: 10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: 100%;
+  box-sizing: border-box;
 `;
 
 const Button = styled.button<{ variant?: 'primary' | 'secondary' | 'danger' }>`
@@ -341,10 +356,18 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     window.location.href = '/';
   };
 
+  const backendOptions = {
+    enableMouseEvents: true,
+    enableTouchEvents: true,
+    delayTouchStart: 0, // Reduce touch delay to 0
+    delay: 0, // Reduce drag delay to 0
+    touchSlop: 0, // Reduce touch slop to 0
+  };
+
   if (!currentSentence) return null;
 
   return (
-    <DndProvider backend={isMobile ? TouchBackend : HTML5Backend}>
+    <DndProvider backend={isMobile ? TouchBackend : HTML5Backend} options={backendOptions}>
       <GameBoardContainer>
         <SentenceContainer>
           <EnglishText>
