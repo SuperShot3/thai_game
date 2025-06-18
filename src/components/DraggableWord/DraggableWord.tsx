@@ -16,6 +16,9 @@ const WordCard = styled.div<{ isInUse: boolean; isDragging: boolean }>`
   margin: 8px;
   cursor: grab;
   user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
   transition: transform 0.1s ease, background 0.1s ease, border-color 0.1s ease;
   opacity: ${({ isInUse, isDragging }) => isInUse ? 0.5 : isDragging ? 0.8 : 1};
   will-change: transform;
@@ -79,6 +82,8 @@ const DraggableWord: React.FC<DraggableWordProps> = ({
     if (isInUse) return;
     
     e.preventDefault();
+    e.stopPropagation();
+    
     setIsPointerDown(true);
     setDragStartPos({ x: e.clientX, y: e.clientY });
     
@@ -91,11 +96,14 @@ const DraggableWord: React.FC<DraggableWordProps> = ({
   const handlePointerMove = (e: React.PointerEvent) => {
     if (!isPointerDown || isInUse) return;
     
+    e.preventDefault();
+    e.stopPropagation();
+    
     const deltaX = Math.abs(e.clientX - dragStartPos.x);
     const deltaY = Math.abs(e.clientY - dragStartPos.y);
     
-    // Start dragging if moved more than 5px
-    if (!isDragging && (deltaX > 5 || deltaY > 5)) {
+    // Start dragging if moved more than 3px (reduced threshold for better responsiveness)
+    if (!isDragging && (deltaX > 3 || deltaY > 3)) {
       setIsDragging(true);
       setCurrentPos({ x: e.clientX, y: e.clientY });
       
@@ -117,6 +125,9 @@ const DraggableWord: React.FC<DraggableWordProps> = ({
   const handlePointerUp = (e: React.PointerEvent) => {
     if (!isPointerDown) return;
     
+    e.preventDefault();
+    e.stopPropagation();
+    
     setIsPointerDown(false);
     
     if (isDragging) {
@@ -131,6 +142,12 @@ const DraggableWord: React.FC<DraggableWordProps> = ({
     // Release pointer capture
     if (cardRef.current) {
       cardRef.current.releasePointerCapture(e.pointerId);
+    }
+  };
+
+  const handlePointerLeave = (e: React.PointerEvent) => {
+    if (isPointerDown) {
+      handlePointerUp(e);
     }
   };
 
@@ -155,7 +172,8 @@ const DraggableWord: React.FC<DraggableWordProps> = ({
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerUp}
+        onPointerLeave={handlePointerLeave}
+        draggable={false}
       >
         <WordText className={fontClass}>{word}</WordText>
       </WordCard>

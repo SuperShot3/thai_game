@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 
 interface DroppableZoneProps {
@@ -41,6 +41,8 @@ const DropZone = styled.div<{
   position: relative;
   will-change: transform, background, border-color;
   touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
 
   &:hover {
     background: ${({ hasWord, isComplete, isDragOver }) => {
@@ -95,8 +97,9 @@ const DroppableZone: React.FC<DroppableZoneProps> = ({
   children
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
+  const zoneRef = useRef<HTMLDivElement>(null);
 
-  // Check for global drag data
+  // Check for global drag data with reduced frequency
   useEffect(() => {
     const checkDragData = () => {
       if ((window as any).__dragData && (window as any).__dragData.type === 'word') {
@@ -106,7 +109,7 @@ const DroppableZone: React.FC<DroppableZoneProps> = ({
       }
     };
 
-    const interval = setInterval(checkDragData, 50);
+    const interval = setInterval(checkDragData, 100); // Reduced from 50ms to 100ms
     return () => clearInterval(interval);
   }, []);
 
@@ -128,7 +131,10 @@ const DroppableZone: React.FC<DroppableZoneProps> = ({
   };
 
   // Handle pointer-based drops
-  const handlePointerUp = () => {
+  const handlePointerUp = (e: React.PointerEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     if ((window as any).__dragData && (window as any).__dragData.type === 'word') {
       const dragData = (window as any).__dragData;
       onDrop({ word: dragData.word });
@@ -136,12 +142,29 @@ const DroppableZone: React.FC<DroppableZoneProps> = ({
     }
   };
 
+  // Handle pointer enter for better visual feedback
+  const handlePointerEnter = (e: React.PointerEvent) => {
+    e.preventDefault();
+    if ((window as any).__dragData && (window as any).__dragData.type === 'word') {
+      setIsDragOver(true);
+    }
+  };
+
+  // Handle pointer leave
+  const handlePointerLeave = (e: React.PointerEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
   return (
     <DropZone
+      ref={zoneRef}
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       onDragEnter={handleDragEnter}
       onPointerUp={handlePointerUp}
+      onPointerEnter={handlePointerEnter}
+      onPointerLeave={handlePointerLeave}
       hasWord={!!word}
       isComplete={isComplete}
       isCorrect={isCorrect}

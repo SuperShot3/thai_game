@@ -16,6 +16,7 @@ const GlobalStyle = createGlobalStyle`
     -ms-user-select: none;
     user-select: none;
     -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
     margin: 0;
     padding: 0;
     box-sizing: border-box;
@@ -26,6 +27,10 @@ const GlobalStyle = createGlobalStyle`
     width: 100%;
     overflow: hidden;
     position: fixed;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-action: manipulation;
+    touch-action: manipulation;
   }
 
   /* Allow scrolling when leaderboard is open */
@@ -41,8 +46,16 @@ const GlobalStyle = createGlobalStyle`
     user-select: text;
   }
 
+  /* Prevent iOS magnifying glass */
   * {
+    -webkit-touch-callout: none;
     -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Improve touch responsiveness */
+  button, [role="button"] {
+    -webkit-touch-action: manipulation;
+    touch-action: manipulation;
   }
 `;
 
