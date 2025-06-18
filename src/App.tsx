@@ -30,6 +30,12 @@ const GlobalStyle = createGlobalStyle`
     position: fixed;
   }
 
+  /* Allow scrolling when leaderboard is open */
+  body.leaderboard-open {
+    overflow: auto;
+    position: static;
+  }
+
   input, textarea {
     -webkit-user-select: text;
     -moz-user-select: text;
@@ -56,6 +62,48 @@ const AppContainer = styled.div`
   top: 0;
   left: 0;
   box-sizing: border-box;
+`;
+
+const FirstPageContainer = styled.div`
+  min-height: 100vh;
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+  padding-bottom: 4rem; /* Extra bottom padding for scrolling */
+  background: #f8f9fa;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: absolute; /* Changed from fixed to absolute */
+  top: 0;
+  left: 0;
+  box-sizing: border-box;
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  
+  /* Custom scrollbar styling */
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+  }
+  
+  &::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.5);
+  }
+  
+  /* Ensure content can scroll */
+  & > * {
+    flex-shrink: 0;
+  }
 `;
 
 const Title = styled.h1`
@@ -85,6 +133,31 @@ const Button = styled.button`
   &:hover {
     background: #45a049;
     transform: translateY(-2px);
+  }
+`;
+
+const LeaderboardSection = styled.div`
+  width: 100%;
+  max-width: 800px;
+  margin: 0 0 2rem 0; /* Reduced top margin, increased bottom margin */
+  padding: 0 1rem;
+  flex-shrink: 0;
+  min-height: 400px; /* Ensure minimum height for visibility */
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  animation: slideDown 0.3s ease-out;
+  
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 `;
 
@@ -196,21 +269,81 @@ const App: React.FC = () => {
     return '';
   };
 
+  const handleShowLeaderboard = () => {
+    setShowLeaderboard(true);
+    // Add class to body to allow scrolling
+    document.body.classList.add('leaderboard-open');
+    // Scroll to top when leaderboard is opened
+    setTimeout(() => {
+      const container = document.querySelector('[data-first-page-container]');
+      if (container) {
+        container.scrollTop = 0;
+      }
+    }, 100);
+  };
+
+  const handleHideLeaderboard = () => {
+    setShowLeaderboard(false);
+    // Remove class from body to restore fixed behavior
+    document.body.classList.remove('leaderboard-open');
+  };
+
   if (showUserForm) {
     return (
       <>
         <GlobalStyle />
-      <AppContainer>
-        <Title>Thai Sentence Builder</Title>
-        <UserForm onSubmit={handleUserSubmit} onSkip={handleSkip} />
-          <Button onClick={() => setShowLeaderboard(true)}>View Leaderboard</Button>
+        <FirstPageContainer data-first-page-container>
+          <Title>Thai Sentence Builder</Title>
+          
           {showLeaderboard && (
-            <>
-              <Button onClick={() => setShowLeaderboard(false)}>Close Leaderboard</Button>
+            <LeaderboardSection>
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center', 
+                marginBottom: '1rem',
+                padding: '1rem',
+                background: 'rgba(0, 0, 0, 0.05)',
+                borderRadius: '8px',
+                border: '2px solid #4CAF50'
+              }}>
+                <h3 style={{ margin: 0, color: '#4CAF50', fontWeight: 'bold' }}>🏆 Leaderboard</h3>
+                <Button 
+                  onClick={handleHideLeaderboard}
+                  style={{
+                    background: '#f44336',
+                    color: 'white',
+                    padding: '0.5rem 1rem',
+                    fontSize: '0.9rem',
+                    fontWeight: 'bold',
+                    border: '2px solid #d32f2f',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                  }}
+                >
+                  ✕ Close Leaderboard
+                </Button>
+              </div>
               <Leaderboard />
-            </>
+            </LeaderboardSection>
           )}
-      </AppContainer>
+          
+          <UserForm onSubmit={handleUserSubmit} onSkip={handleSkip} />
+          <Button 
+            onClick={handleShowLeaderboard}
+            style={{
+              background: '#2196f3',
+              color: 'white',
+              padding: '1rem 2rem',
+              fontSize: '1.1rem',
+              fontWeight: 'bold',
+              border: '2px solid #1976d2',
+              boxShadow: '0 4px 8px rgba(33, 150, 243, 0.3)',
+              marginTop: '1rem'
+            }}
+          >
+            🏆 View Leaderboard
+          </Button>
+        </FirstPageContainer>
       </>
     );
   }

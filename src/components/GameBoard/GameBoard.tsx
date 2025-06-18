@@ -198,6 +198,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
   const [correctWords, setCorrectWords] = useState(0);
   const [incorrectWords, setIncorrectWords] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
   const startTimeRef = useRef(Date.now());
 
   const getRandomFont = () => {
@@ -240,6 +241,14 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
 
     return () => clearInterval(timer);
   }, [difficulty, generateNewSentence]);
+
+  const handleDragStart = (index: number) => {
+    setIsDragging(true);
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>, position: number) => {
     if (isComplete) return;
@@ -409,8 +418,8 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
               word={wordState.word}
               index={index}
               isInUse={wordState.isInUse}
-              onDragStart={() => {}}
-              onDragEnd={() => {}}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
               fontClass={currentFont}
             />
           ))}
@@ -437,7 +446,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
           <Dialog
             message={isCorrect ? 
               "Congratulations! Your answer is correct!" : 
-              "Try again! Your answer is not quite right."}
+              "Try again! Your answer is incorrect."}
             type={isCorrect ? 'success' : 'error'}
             onClose={handleTryAgain}
           />
