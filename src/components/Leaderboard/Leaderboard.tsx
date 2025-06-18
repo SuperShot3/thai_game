@@ -96,25 +96,7 @@ const ErrorState = styled(EmptyState)`
   color: #e74c3c;
 `;
 
-const TestButton = styled.button`
-  margin: 1rem;
-  padding: 0.5rem 1rem;
-  background: #4a90e2;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
 
-  &:hover {
-    background: #357abd;
-  }
-`;
-
-const ButtonContainer = styled.div`
-  display: flex;
-  gap: 1rem;
-  margin: 1rem 0;
-`;
 
 const formatTime = (seconds: number): string => {
   const hours = Math.floor(seconds / 3600);
@@ -146,22 +128,7 @@ const Leaderboard: React.FC = () => {
     }
   };
 
-  const handleTestClick = async () => {
-    try {
-      await userService.testAddEntry();
-      await fetchLeaderboard();
-    } catch (err) {
-      console.error('Error in test:', err);
-    }
-  };
 
-  const handleTestConnection = async () => {
-    try {
-      await userService.testSupabaseConnection();
-    } catch (err) {
-      console.error('Error testing connection:', err);
-    }
-  };
 
   useEffect(() => {
     fetchLeaderboard();
@@ -172,10 +139,6 @@ const Leaderboard: React.FC = () => {
   return (
     <Container>
       <Title>Leaderboard</Title>
-      <ButtonContainer>
-        <TestButton onClick={handleTestClick}>Add Test Entry</TestButton>
-        <TestButton onClick={handleTestConnection}>Test Connection</TestButton>
-      </ButtonContainer>
       {loading ? (
         <LoadingState>Loading leaderboard...</LoadingState>
       ) : error ? (
