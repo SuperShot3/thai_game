@@ -315,10 +315,22 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
 
   const checkAnswer = () => {
     if (!currentSentence) return false;
+    
+    // First check if all positions are filled
+    if (userAnswer.some(word => !word)) {
+      return false;
+    }
+    
+    // Then check if the answer matches exactly
     return userAnswer.join(' ') === currentSentence.thaiWords.join(' ');
   };
 
   const handleAnswerCheck = () => {
+    // First verify all words are placed
+    if (userAnswer.some(word => !word)) {
+      return;
+    }
+
     const isAnswerCorrect = checkAnswer();
     setIsComplete(true);
     setIsCorrect(isAnswerCorrect);
@@ -452,7 +464,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
         <Button 
           variant="primary" 
           onClick={handleAnswerCheck}
-          disabled={isComplete || userAnswer.some(word => !word)}
+          disabled={isComplete || userAnswer.length !== currentSentence?.thaiWords.length || userAnswer.some(word => !word)}
         >
           Check Answer
         </Button>

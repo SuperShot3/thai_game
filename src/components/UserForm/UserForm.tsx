@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 
 interface UserFormProps {
-  onSubmit: (data: { name: string; email: string }) => void;
+  onSubmit: (data: { name: string }) => void;
   onSkip: () => void;
 }
 
@@ -74,11 +74,10 @@ const SkipButton = styled(Button)`
 
 const UserForm: React.FC<UserFormProps> = ({ onSubmit, onSkip }) => {
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({ name, email });
+    onSubmit({ name });
   };
 
   return (
@@ -92,14 +91,7 @@ const UserForm: React.FC<UserFormProps> = ({ onSubmit, onSkip }) => {
           onChange={(e) => setName(e.target.value)}
           required
         />
-        <Input
-          type="email"
-          placeholder="Your email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <Button type="submit" disabled={!name || !email}>
+        <Button type="submit" disabled={!name}>
           Start Learning
         </Button>
         <SkipButton type="button" onClick={onSkip}>

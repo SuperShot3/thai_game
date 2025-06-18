@@ -10,7 +10,6 @@ type ProgressData = {
 
 interface User {
   name: string;
-  email: string;
 }
 
 class UserService {
@@ -34,15 +33,15 @@ class UserService {
     if (storedUser) {
       try {
         this.currentUser = JSON.parse(storedUser);
-      } catch (error) {
+    } catch (error) {
         console.error('Error parsing stored user:', error);
         this.currentUser = null;
       }
     }
   }
 
-  public setUser(name: string, email: string): void {
-    this.currentUser = { name, email };
+  public setUser(name: string): void {
+    this.currentUser = { name };
     localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.currentUser));
   }
 
@@ -61,7 +60,7 @@ class UserService {
     if (storedProgress) {
       try {
         return JSON.parse(storedProgress);
-      } catch (error) {
+    } catch (error) {
         console.error('Error parsing stored progress:', error);
         return null;
       }

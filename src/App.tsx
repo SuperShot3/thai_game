@@ -225,13 +225,13 @@ const App: React.FC = () => {
     setProgress(newProgress);
   };
 
-  const handleUserSubmit = (userData: { name: string; email: string }) => {
-    userService.setUser(userData.name, userData.email);
+  const handleUserSubmit = (userData: { name: string }) => {
+    userService.setUser(userData.name);
     setShowUserForm(false);
   };
 
   const handleSkip = () => {
-    userService.setUser('Guest', 'guest@example.com');
+    userService.setUser('Guest');
     setShowUserForm(false);
   };
 
