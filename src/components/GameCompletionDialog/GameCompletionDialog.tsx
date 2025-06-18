@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { userService } from '../../services/userService';
 import { Difficulty } from '../../types';
@@ -127,10 +127,17 @@ const GameCompletionDialog: React.FC<GameCompletionDialogProps> = ({
   totalTime
 }) => {
   const [name, setName] = useState('');
+  const currentUser = userService.getUser();
 
-  const handleSubmit = () => {
-    userService.addToLeaderboard({
-      name,
+  useEffect(() => {
+    if (currentUser?.name) {
+      setName(currentUser.name);
+    }
+  }, [currentUser]);
+
+  const handleSubmit = async () => {
+    await userService.addToLeaderboard({
+      name: name || undefined,
       correctWords,
       incorrectWords,
       totalTime
@@ -157,12 +164,14 @@ const GameCompletionDialog: React.FC<GameCompletionDialogProps> = ({
             <span>{formatTime(totalTime)}</span>
           </Stat>
         </Stats>
-        <Input
-          type="text"
-          placeholder="Enter your name (optional)"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
+        {!currentUser?.name && (
+          <Input
+            type="text"
+            placeholder="Enter your name (optional)"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        )}
         <ButtonGroup>
           <PrimaryButton onClick={handleSubmit}>Save Score</PrimaryButton>
           <SecondaryButton onClick={onRestart}>Play Again</SecondaryButton>

@@ -41,33 +41,41 @@ export const DragProvider = ({ children }: { children: ReactNode }) => {
     setDragState(prev => {
       if (!prev || !prev.isDragging) return prev;
       
-      // Find the closest drop zone
+      // Find the closest drop zone with improved detection
       let closestZoneId: string | null = null;
       let closestDistance = Infinity;
       
       dropZones.forEach((zone, id) => {
-        const zoneCenterX = zone.rect.left + zone.rect.width / 2;
-        const zoneCenterY = zone.rect.top + zone.rect.height / 2;
+        const rect = zone.rect;
         
-        // Add 15px margin for more forgiving drop detection
-        const margin = 15;
+        // Calculate distances to zone edges and center
+        const horizontalDistance = x < rect.left ? rect.left - x : x > rect.right ? x - rect.right : 0;
+        const verticalDistance = y < rect.top ? rect.top - y : y > rect.bottom ? y - rect.bottom : 0;
+        
+        // Add more forgiving margins for middle zones
+        const margin = zone.position === 1 ? 25 : 15; // Larger margin for middle position
         const expandedRect = {
-          left: zone.rect.left - margin,
-          right: zone.rect.right + margin,
-          top: zone.rect.top - margin,
-          bottom: zone.rect.bottom + margin,
+          left: rect.left - margin,
+          right: rect.right + margin,
+          top: rect.top - margin,
+          bottom: rect.bottom + margin,
         };
         
         // Check if pointer is within expanded zone
         if (x >= expandedRect.left && x <= expandedRect.right && 
             y >= expandedRect.top && y <= expandedRect.bottom) {
           
+          // Calculate weighted distance (give preference to vertical alignment)
           const distance = Math.sqrt(
-            Math.pow(x - zoneCenterX, 2) + Math.pow(y - zoneCenterY, 2)
+            Math.pow(horizontalDistance * 1.5, 2) + // Weight horizontal distance more
+            Math.pow(verticalDistance, 2)
           );
           
-          if (distance < closestDistance) {
-            closestDistance = distance;
+          // Give slight preference to middle zone when distances are close
+          const adjustedDistance = zone.position === 1 ? distance * 0.9 : distance;
+          
+          if (adjustedDistance < closestDistance) {
+            closestDistance = adjustedDistance;
             closestZoneId = id;
           }
         }

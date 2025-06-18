@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useDragContext } from '../DraggableWord/DragContext';
 import './DroppableZone.css';
 
@@ -22,27 +22,37 @@ const DroppableZone: React.FC<DroppableZoneProps> = ({
   const [isDragOver, setIsDragOver] = useState(false);
   const zoneId = `drop-zone-${position}`;
 
-  // Register this drop zone with the drag context
-  useEffect(() => {
+  // Update drop zone registration
+  const updateDropZoneRect = useCallback(() => {
     if (zoneRef.current) {
       const rect = zoneRef.current.getBoundingClientRect();
       registerDropZone(zoneId, rect, position);
-      
-      // Update rect on resize
-      const updateRect = () => {
-        if (zoneRef.current) {
-          const newRect = zoneRef.current.getBoundingClientRect();
-          registerDropZone(zoneId, newRect, position);
-        }
-      };
-      
-      window.addEventListener('resize', updateRect);
-      return () => {
-        window.removeEventListener('resize', updateRect);
-        unregisterDropZone(zoneId);
-      };
     }
-  }, [zoneId, position, registerDropZone, unregisterDropZone]);
+  }, [zoneId, position, registerDropZone]);
+
+  // Register this drop zone with the drag context
+  useEffect(() => {
+    updateDropZoneRect();
+    
+    // Update rect on resize and scroll
+    window.addEventListener('resize', updateDropZoneRect);
+    window.addEventListener('scroll', updateDropZoneRect);
+    
+    // Update rect periodically during drag
+    let intervalId: number;
+    if (dragState?.isDragging) {
+      intervalId = window.setInterval(updateDropZoneRect, 100);
+    }
+    
+    return () => {
+      window.removeEventListener('resize', updateDropZoneRect);
+      window.removeEventListener('scroll', updateDropZoneRect);
+      if (intervalId) {
+        window.clearInterval(intervalId);
+      }
+      unregisterDropZone(zoneId);
+    };
+  }, [zoneId, position, registerDropZone, unregisterDropZone, updateDropZoneRect, dragState?.isDragging]);
 
   // Check if this zone is the active drop zone
   useEffect(() => {
@@ -52,16 +62,14 @@ const DroppableZone: React.FC<DroppableZoneProps> = ({
 
   const handlePointerUp = (e: React.PointerEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     
-    if (dragState && dragState.isDragging) {
-      // Use the active drop zone from context instead of relying on pointer position
+    if (dragState?.isDragging) {
       const activeZoneId = getActiveDropZone();
       
       if (activeZoneId === zoneId && !isFilled) {
-        // Valid drop - word is over this zone and zone is empty
         onDrop(dragState.word, position);
       } else {
-        // Invalid drop - cancel the drag
         cancelDrag();
       }
     }
@@ -69,21 +77,29 @@ const DroppableZone: React.FC<DroppableZoneProps> = ({
 
   const handlePointerEnter = (e: React.PointerEvent) => {
     e.preventDefault();
-    // This is now handled by the drag context, but keep for fallback
+    e.stopPropagation();
+    updateDropZoneRect();
   };
 
   const handlePointerLeave = (e: React.PointerEvent) => {
     e.preventDefault();
-    // This is now handled by the drag context, but keep for fallback
+    e.stopPropagation();
   };
 
   return (
     <div
       ref={zoneRef}
       className={`droppable-zone ${isFilled ? 'filled' : ''} ${isDragOver ? 'drag-over' : ''}`}
+      onPointerUp={handlePointerUp}
       onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}
+      onPointerMove={updateDropZoneRect}
       data-position={position}
+      style={{
+        touchAction: 'none',
+        userSelect: 'none',
+        WebkitUserSelect: 'none'
+      }}
     >
       {isFilled && filledWord && (
         <span className={`filled-word ${fontClass || ''}`}>

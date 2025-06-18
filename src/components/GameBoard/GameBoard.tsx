@@ -302,31 +302,33 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
   const checkAnswer = () => {
     if (!currentSentence) return;
 
-    // Only check if all slots are filled
-    if (userAnswer.some(word => !word)) return;
-
-    const isAnswerCorrect = userAnswer.every((word, index) => word === currentSentence.thaiWords[index]);
+    const isAnswerCorrect = userAnswer.join(' ') === currentSentence.thaiWords.join(' ');
     setIsCorrect(isAnswerCorrect);
     setIsComplete(true);
 
     if (isAnswerCorrect) {
       setCorrectWords(prev => prev + 1);
-      const updatedProgress = userService.updateProgress(difficulty, true);
-      if (updatedProgress) {
-        // Check if level is complete
-        if (userService.isLevelComplete(difficulty)) {
-          // Only show completion dialog if this is the final level (advanced)
-          if (difficulty === 'advanced') {
-            setShowCompletionDialog(true);
-          }
-        }
-        // Always call onLevelComplete to handle progression
-        onLevelComplete(difficulty);
+      const progress = userService.updateProgress(difficulty, true);
+      
+      // Add score to leaderboard after each correct sentence
+      const currentUser = userService.getUser();
+      userService.addToLeaderboard({
+        name: currentUser?.name || undefined,
+        correctWords: correctWords + 1,
+        incorrectWords,
+        totalTime: elapsedTime
+      });
+
+      if (userService.isLevelComplete(difficulty)) {
+        setShowCompletionDialog(true);
+      } else {
+        setTimeout(() => {
+          generateNewSentence();
+        }, 1500);
       }
     } else {
       setIncorrectWords(prev => prev + 1);
       userService.updateProgress(difficulty, false);
-      // Only show dialog for incorrect answers
       setShowDialog(true);
     }
   };
