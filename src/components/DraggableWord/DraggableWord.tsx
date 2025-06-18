@@ -18,7 +18,7 @@ const DraggableWord: React.FC<DraggableWordProps> = ({
   isUsed = false
 }) => {
   const wordRef = useRef<HTMLDivElement>(null);
-  const { startDrag, updateDrag, stopDrag, dragState } = useDragContext();
+  const { startDrag, updateDrag, dragState } = useDragContext();
   const isDraggingThis = dragState?.word === word && dragState?.isDragging;
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
@@ -51,32 +51,20 @@ const DraggableWord: React.FC<DraggableWordProps> = ({
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    if (isDraggingThis) {
-      // Release pointer capture
-      if (wordRef.current) {
-        wordRef.current.releasePointerCapture(e.pointerId);
-      }
-      
-      stopDrag();
-      onDragEnd?.();
+    // Only release pointer capture, do not call stopDrag or onDragEnd
+    if (isDraggingThis && wordRef.current) {
+      wordRef.current.releasePointerCapture(e.pointerId);
     }
-  }, [isDraggingThis, stopDrag, onDragEnd]);
+  }, [isDraggingThis]);
 
   const handlePointerCancel = useCallback((e: React.PointerEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    if (isDraggingThis) {
-      // Release pointer capture
-      if (wordRef.current) {
-        wordRef.current.releasePointerCapture(e.pointerId);
-      }
-      
-      stopDrag();
-      onDragEnd?.();
+    // Only release pointer capture, do not call stopDrag or onDragEnd
+    if (isDraggingThis && wordRef.current) {
+      wordRef.current.releasePointerCapture(e.pointerId);
     }
-  }, [isDraggingThis, stopDrag, onDragEnd]);
+  }, [isDraggingThis]);
 
   // Global pointer move handler for better performance
   useEffect(() => {
@@ -85,24 +73,11 @@ const DraggableWord: React.FC<DraggableWordProps> = ({
         updateDrag(e.clientX, e.clientY);
       }
     };
-
-    const handleGlobalPointerUp = (e: PointerEvent) => {
-      if (isDraggingThis) {
-        stopDrag();
-        onDragEnd?.();
-      }
-    };
-
-    if (isDraggingThis) {
-      document.addEventListener('pointermove', handleGlobalPointerMove, { passive: false });
-      document.addEventListener('pointerup', handleGlobalPointerUp, { passive: false });
-    }
-
+    document.addEventListener('pointermove', handleGlobalPointerMove, { passive: false });
     return () => {
       document.removeEventListener('pointermove', handleGlobalPointerMove);
-      document.removeEventListener('pointerup', handleGlobalPointerUp);
     };
-  }, [isDraggingThis, updateDrag, stopDrag, onDragEnd]);
+  }, [isDraggingThis, updateDrag]);
 
   return (
     <div
