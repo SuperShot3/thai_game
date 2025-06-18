@@ -193,7 +193,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
   const [incorrectWords, setIncorrectWords] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
   const startTimeRef = useRef(Date.now());
-  const { stopDrag } = useDragContext();
+  const { stopDrag, dragState, getActiveDropZone, dropZones } = useDragContext();
 
   const getRandomFont = () => {
     const fonts = [
@@ -253,6 +253,26 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
       return () => clearTimeout(timer);
     }
   }, [isComplete, isCorrect, difficulty, generateNewSentence]);
+
+  // Global drop handler
+  useEffect(() => {
+    if (!dragState?.isDragging) return;
+    const handlePointerUp = (e: PointerEvent) => {
+      // Only handle if dragging
+      if (!dragState?.isDragging) return;
+      const activeZoneId = getActiveDropZone();
+      if (activeZoneId && dropZones.has(activeZoneId)) {
+        const zone = dropZones.get(activeZoneId)!;
+        handleDrop(dragState.word, zone.position);
+      } else {
+        stopDrag();
+      }
+    };
+    document.addEventListener('pointerup', handlePointerUp, { passive: false });
+    return () => {
+      document.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [dragState, getActiveDropZone, dropZones]);
 
   const handleDrop = (word: string, position: number) => {
     // Check if the word is already used

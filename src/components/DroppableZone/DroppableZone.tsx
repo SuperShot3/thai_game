@@ -81,7 +81,6 @@ const DroppableZone: React.FC<DroppableZoneProps> = ({
     <div
       ref={zoneRef}
       className={`droppable-zone ${isFilled ? 'filled' : ''} ${isDragOver ? 'drag-over' : ''}`}
-      onPointerUp={handlePointerUp}
       onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}
       data-position={position}
