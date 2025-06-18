@@ -10,6 +10,8 @@ import Leaderboard from './components/Leaderboard/Leaderboard';
 import Dialog from './components/Dialog/Dialog';
 import { DragProvider } from './components/DraggableWord/DragContext';
 import DragLayer from './components/DraggableWord/DragLayer';
+import FeedbackButton from './components/Feedback/FeedbackButton';
+import FeedbackModal from './components/Feedback/FeedbackModal';
 
 const GlobalStyle = createGlobalStyle`
   * {
@@ -199,6 +201,7 @@ const App: React.FC = () => {
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [isGameCompleted, setIsGameCompleted] = useState(false);
   const [dialogButtonText, setDialogButtonText] = useState('Close');
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
 
   useEffect(() => {
     // Initialize progress from user service
@@ -399,7 +402,12 @@ const App: React.FC = () => {
           >
             🏆 View Leaderboard
           </Button>
+          <FeedbackButton onClick={() => setShowFeedbackModal(true)} />
         </FirstPageContainer>
+        <FeedbackModal 
+          isOpen={showFeedbackModal} 
+          onClose={() => setShowFeedbackModal(false)} 
+        />
       </>
     );
   }
