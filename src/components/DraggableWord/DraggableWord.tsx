@@ -52,16 +52,6 @@ const DraggableWord: React.FC<DraggableWordProps> = ({
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [touchStartPos, setTouchStartPos] = useState({ x: 0, y: 0 });
-  const [isMobile, setIsMobile] = useState(false);
-
-  // Detect mobile device
-  React.useEffect(() => {
-    const checkMobile = () => {
-      return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    };
-    setIsMobile(checkMobile());
-  }, []);
 
   const createDragImage = (element: HTMLElement) => {
     const dragImage = element.cloneNode(true) as HTMLElement;
@@ -123,36 +113,20 @@ const DraggableWord: React.FC<DraggableWordProps> = ({
     onDragEnd();
   };
 
-  // Mobile touch handlers for instant response
+  // Mobile touch handler for instant response
   const handleTouchStart = (e: React.TouchEvent) => {
     if (isInUse || isDragging) return;
     
-    const touch = e.touches[0];
-    setTouchStartPos({ x: touch.clientX, y: touch.clientY });
-    
-    // Prevent default to avoid any delay
-    e.preventDefault();
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (isInUse || isDragging || !cardRef.current) return;
-    
-    const touch = e.touches[0];
-    const deltaX = Math.abs(touch.clientX - touchStartPos.x);
-    const deltaY = Math.abs(touch.clientY - touchStartPos.y);
-    
-    // Start dragging if finger has moved more than 5px
-    if (deltaX > 5 || deltaY > 5) {
-      setIsDragging(true);
-      
-      // Create and dispatch a drag event
+    // For mobile, we'll use a simple approach - just start dragging immediately
+    // This eliminates the delay while keeping it simple and reliable
+    if (cardRef.current) {
+      // Create a drag event immediately
       const dragEvent = new DragEvent('dragstart', {
         bubbles: true,
         cancelable: true,
         dataTransfer: new DataTransfer()
       });
       
-      // Set the data
       dragEvent.dataTransfer?.setData('text/plain', word);
       dragEvent.dataTransfer!.effectAllowed = 'move';
       
@@ -171,26 +145,18 @@ const DraggableWord: React.FC<DraggableWordProps> = ({
         }
       }, 0);
       
+      setIsDragging(true);
       onDragStart(index);
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (isDragging) {
-      setIsDragging(false);
-      onDragEnd();
     }
   };
 
   return (
     <WordCard
       ref={cardRef}
-      draggable={!isInUse && !isMobile}
+      draggable={!isInUse}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
       isInUse={isInUse}
     >
       <WordText className={fontClass}>{word}</WordText>
