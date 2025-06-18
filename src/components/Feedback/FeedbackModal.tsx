@@ -149,15 +149,33 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose }) => {
     setSubmitStatus('idle');
 
     try {
-      const response = await fetch('https://script.google.com/macros/s/AKfycbyY-SD0I7-oVu4pbnTRJTcpsL6kVeEkKO8g9Dq0c2Y2ezFbl0SUgpo4orwm4cmAbQhWhQ/exec', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ message: message.trim() }),
-      });
+      // Method 1: Try JSON POST first
+      let response;
+      try {
+        response = await fetch('https://script.google.com/macros/s/AKfycbyY-SD0I7-oVu4pbnTRJTcpsL6kVeEkKO8g9Dq0c2Y2ezFbl0SUgpo4orwm4cmAbQhWhQ/exec', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ message: message.trim() }),
+        });
+      } catch (jsonError) {
+        console.log('JSON POST failed, trying form data:', jsonError);
+        
+        // Method 2: Try form data POST
+        const formData = new FormData();
+        formData.append('message', message.trim());
+        
+        response = await fetch('https://script.google.com/macros/s/AKfycbyY-SD0I7-oVu4pbnTRJTcpsL6kVeEkKO8g9Dq0c2Y2ezFbl0SUgpo4orwm4cmAbQhWhQ/exec', {
+          method: 'POST',
+          body: formData,
+        });
+      }
 
-      if (response.ok) {
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+
+      if (response.ok || response.status === 200) {
         setSubmitStatus('success');
         setMessage('');
         // Auto-close after 2 seconds
@@ -166,14 +184,79 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose }) => {
           setSubmitStatus('idle');
         }, 2000);
       } else {
-        setSubmitStatus('error');
+        console.error('Response not ok:', response.status, response.statusText);
+        
+        // Method 3: Fallback to hidden form submission
+        console.log('Trying fallback form submission...');
+        const success = await submitViaHiddenForm(message.trim());
+        if (success) {
+          setSubmitStatus('success');
+          setMessage('');
+          setTimeout(() => {
+            onClose();
+            setSubmitStatus('idle');
+          }, 2000);
+        } else {
+          setSubmitStatus('error');
+        }
       }
     } catch (error) {
       console.error('Feedback submission error:', error);
-      setSubmitStatus('error');
+      
+      // Try fallback method
+      try {
+        const success = await submitViaHiddenForm(message.trim());
+        if (success) {
+          setSubmitStatus('success');
+          setMessage('');
+          setTimeout(() => {
+            onClose();
+            setSubmitStatus('idle');
+          }, 2000);
+        } else {
+          setSubmitStatus('error');
+        }
+      } catch (fallbackError) {
+        console.error('Fallback also failed:', fallbackError);
+        setSubmitStatus('error');
+      }
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Fallback method using hidden form
+  const submitViaHiddenForm = (messageText: string): Promise<boolean> => {
+    return new Promise((resolve) => {
+      try {
+        // Create a hidden form
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = 'https://script.google.com/macros/s/AKfycbyY-SD0I7-oVu4pbnTRJTcpsL6kVeEkKO8g9Dq0c2Y2ezFbl0SUgpo4orwm4cmAbQhWhQ/exec';
+        form.style.display = 'none';
+        form.target = '_blank';
+
+        // Create input field
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'message';
+        input.value = messageText;
+
+        // Add to form and submit
+        form.appendChild(input);
+        document.body.appendChild(form);
+        
+        // Submit and clean up
+        setTimeout(() => {
+          form.submit();
+          document.body.removeChild(form);
+          resolve(true);
+        }, 100);
+      } catch (error) {
+        console.error('Hidden form submission failed:', error);
+        resolve(false);
+      }
+    });
   };
 
   const handleClose = () => {
