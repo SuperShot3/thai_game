@@ -1,0 +1,59 @@
+.draggable-word {
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-radius: 8px;
+  padding: 12px 20px;
+  margin: 8px;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 0.1s ease;
+  will-change: transform, opacity;
+  touch-action: none;
+  position: relative;
+  z-index: 1;
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 500;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.draggable-word.dragging {
+  opacity: 0.8;
+  transform: scale(1.05);
+  cursor: grabbing;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.draggable-word:active {
+  cursor: grabbing;
+  transform: scale(0.98);
+}
+
+/* Disable hover effects on mobile/touch devices */
+@media (hover: none) and (pointer: coarse) {
+  .draggable-word:hover {
+    transform: none;
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+  }
+  
+  .draggable-word.dragging:hover {
+    transform: scale(1.05);
+  }
+}
+
+/* Desktop hover effects */
+@media (hover: hover) and (pointer: fine) {
+  .draggable-word:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: scale(1.05);
+  }
+  
+  .draggable-word.dragging:hover {
+    transform: scale(1.05);
+  }
+} 

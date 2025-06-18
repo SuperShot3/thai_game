@@ -8,6 +8,8 @@ import DroppableZone from '../DroppableZone/DroppableZone';
 import Dialog from '../Dialog/Dialog';
 import GameCompletionDialog from '../GameCompletionDialog/GameCompletionDialog';
 import '../../styles/fonts.css';
+import { useDragContext } from '../DraggableWord/DragContext';
+import './GameBoard.css';
 
 const GameBoardContainer = styled.div`
   display: flex;
@@ -160,11 +162,6 @@ const Button = styled.button<{ variant?: 'primary' | 'secondary' | 'danger' }>`
   }
 `;
 
-interface WordState {
-  word: string;
-  isInUse: boolean;
-}
-
 // Fisher-Yates shuffle algorithm
 const shuffleArray = <T,>(array: T[]): T[] => {
   const shuffled = [...array];
@@ -182,7 +179,7 @@ interface GameBoardProps {
 
 const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) => {
   const [currentSentence, setCurrentSentence] = useState<ThaiSentence | null>(null);
-  const [shuffledWords, setShuffledWords] = useState<WordState[]>([]);
+  const [shuffledWords, setShuffledWords] = useState<string[]>([]);
   const [userAnswer, setUserAnswer] = useState<string[]>([]);
   const [isComplete, setIsComplete] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
@@ -195,6 +192,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
   const [incorrectWords, setIncorrectWords] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
   const startTimeRef = useRef(Date.now());
+  const { stopDrag } = useDragContext();
 
   const getRandomFont = () => {
     const fonts = [
@@ -217,7 +215,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     const newSentence = generateSentence(difficulty);
     setCurrentSentence(newSentence);
     setCurrentFont(getRandomFont());
-    setShuffledWords(shuffleArray(newSentence.thaiWords.map(word => ({ word, isInUse: false }))));
+    setShuffledWords(shuffleArray(newSentence.thaiWords));
     setUserAnswer([]);
     setIsComplete(false);
     setIsCorrect(false);
@@ -254,54 +252,52 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     }
   }, [isComplete, isCorrect, difficulty, generateNewSentence]);
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement> | { word: string }, position: number) => {
-    if (isComplete) return;
-
-    let word: string;
-    
-    // Handle both traditional drag events and pointer-based drops
-    if ('dataTransfer' in e) {
-      // Traditional drag event
-      word = e.dataTransfer.getData('text/plain');
-    } else {
-      // Pointer-based drop
-      word = e.word;
+  const handleDrop = (word: string, position: number) => {
+    // Check if the word is already used
+    if (userAnswer.includes(word)) {
+      return;
     }
-    
-    if (!word) return;
 
+    // Check if the position is already filled
+    if (userAnswer[position]) {
+      return;
+    }
+
+    // Place the word
     const newUserAnswer = [...userAnswer];
-    const existingWord = newUserAnswer[position];
-    
-    if (existingWord) {
-      // Return the existing word to the word bank
-      setShuffledWords(prev => 
-        prev.map(w => w.word === existingWord ? { ...w, isInUse: false } : w)
-      );
-    }
-
     newUserAnswer[position] = word;
     setUserAnswer(newUserAnswer);
-    
-    // Mark the word as in use
-    setShuffledWords(prev => 
-      prev.map(w => w.word === word ? { ...w, isInUse: true } : w)
-    );
-  };
 
-  const handleWordRemove = (position: number) => {
-    if (isComplete) return;
+    // Check if sentence is complete
+    const isComplete = newUserAnswer.every(word => word !== '');
+    if (isComplete) {
+      const isCorrect = newUserAnswer.every((word, index) => word === currentSentence?.thaiWords[index]);
+      setIsCorrect(isCorrect);
+      setIsComplete(true);
 
-    const word = userAnswer[position];
-    if (word) {
-      setShuffledWords(prev => 
-        prev.map(w => w.word === word ? { ...w, isInUse: false } : w)
-      );
-      
-      const newUserAnswer = [...userAnswer];
-      newUserAnswer[position] = '';
-      setUserAnswer(newUserAnswer);
+      if (isCorrect) {
+        setCorrectWords(prev => prev + 1);
+        const updatedProgress = userService.updateProgress(difficulty, true);
+        if (updatedProgress) {
+          // Check if level is complete
+          if (userService.isLevelComplete(difficulty)) {
+            // Only show completion dialog if this is the final level (advanced)
+            if (difficulty === 'advanced') {
+              setShowCompletionDialog(true);
+            }
+          }
+          // Always call onLevelComplete to handle progression
+          onLevelComplete(difficulty);
+        }
+      } else {
+        setIncorrectWords(prev => prev + 1);
+        userService.updateProgress(difficulty, false);
+        // Only show dialog for incorrect answers
+        setShowDialog(true);
+      }
     }
+
+    stopDrag();
   };
 
   const checkAnswer = () => {
@@ -336,10 +332,6 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
   const handleClear = () => {
     if (isComplete) return;
 
-    // Return all words to the word bank
-    setShuffledWords(prev => 
-      prev.map(word => ({ ...word, isInUse: false }))
-    );
     setUserAnswer(Array(currentSentence?.thaiWords.length || 0).fill(''));
   };
 
@@ -349,9 +341,6 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     setIsComplete(false);
     setIsCorrect(false);
     setUserAnswer(Array(currentSentence?.thaiWords.length || 0).fill(''));
-    setShuffledWords(prev => 
-      prev.map(word => ({ ...word, isInUse: false }))
-    );
   };
 
   const toggleHint = () => {
@@ -408,25 +397,27 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
         {currentSentence.thaiWords.map((_: string, index: number) => (
           <DroppableZone
             key={index}
-            onDrop={(e: React.DragEvent<HTMLDivElement> | { word: string }) => handleDrop(e, index)}
-            onWordRemove={() => handleWordRemove(index)}
-            word={userAnswer[index]}
-            isComplete={isComplete}
-            isCorrect={isCorrect}
-          >
-            <span className={currentFont}>{userAnswer[index] || ''}</span>
-          </DroppableZone>
+            position={index}
+            onDrop={handleDrop}
+            isFilled={userAnswer[index] !== ''}
+            filledWord={userAnswer[index]}
+            fontClass={currentFont}
+          />
         ))}
       </AnswerContainer>
 
       <WordContainer>
-        {shuffledWords.map((wordState, index) => (
+        {shuffledWords.map((word, index) => (
           <DraggableWord
-            key={`${wordState.word}-${index}`}
-            word={wordState.word}
-            index={index}
-            isInUse={wordState.isInUse}
+            key={`${word}-${index}`}
+            word={word}
             fontClass={currentFont}
+            onDragStart={() => {
+              // Optional: Add any drag start logic
+            }}
+            onDragEnd={() => {
+              // Optional: Add any drag end logic
+            }}
           />
         ))}
       </WordContainer>

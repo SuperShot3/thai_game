@@ -1,0 +1,71 @@
+.droppable-zone {
+  min-width: 100px;
+  min-height: 50px;
+  border: 2px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  margin: 5px;
+  background: transparent;
+  transition: all 0.1s ease;
+  cursor: pointer;
+  position: relative;
+  will-change: transform, background, border-color;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.droppable-zone.filled {
+  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.droppable-zone.drag-over {
+  border-color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.15);
+  transform: scale(1.05);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+}
+
+.droppable-zone .filled-word {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.1rem;
+  transition: color 0.1s ease;
+}
+
+/* Disable hover effects on mobile/touch devices */
+@media (hover: none) and (pointer: coarse) {
+  .droppable-zone:hover {
+    transform: none;
+    background: transparent;
+  }
+  
+  .droppable-zone.filled:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  .droppable-zone.drag-over:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: scale(1.05);
+  }
+}
+
+/* Desktop hover effects */
+@media (hover: hover) and (pointer: fine) {
+  .droppable-zone:hover {
+    background: rgba(255, 255, 255, 0.05);
+    transform: scale(1.02);
+  }
+  
+  .droppable-zone.filled:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  
+  .droppable-zone.drag-over:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.05);
+  }
+} 
