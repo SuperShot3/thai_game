@@ -155,9 +155,6 @@ const GameCompletionDialog: React.FC<GameCompletionDialogProps> = ({
   };
 
   const handleNextLevel = () => {
-    if (!isScoreSaved) {
-      handleSubmit();
-    }
     onClose();
   };
 

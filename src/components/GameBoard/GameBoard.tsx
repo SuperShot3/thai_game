@@ -310,21 +310,8 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
       setCorrectWords(prev => prev + 1);
       const progress = userService.updateProgress(difficulty, true);
       
-      // Add score to leaderboard after each correct sentence
-      const currentUser = userService.getUser();
-      userService.addToLeaderboard({
-        name: currentUser?.name || undefined,
-        correctWords: correctWords + 1,
-        incorrectWords,
-        totalTime: elapsedTime
-      });
-
       if (userService.isLevelComplete(difficulty)) {
         setShowCompletionDialog(true);
-      } else {
-        setTimeout(() => {
-          generateNewSentence();
-        }, 1500);
       }
     } else {
       setIncorrectWords(prev => prev + 1);
@@ -374,7 +361,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
 
   const handleClose = () => {
     setShowCompletionDialog(false);
-    window.location.href = '/';
+    onLevelComplete(difficulty);  // Call onLevelComplete to handle progression
   };
 
   if (!currentSentence) return null;
