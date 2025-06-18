@@ -5,6 +5,7 @@ interface DialogProps {
   message: string;
   type: 'success' | 'error';
   onClose: () => void;
+  buttonText?: string; // Optional custom button text
 }
 
 const DialogOverlay = styled.div`
@@ -52,12 +53,12 @@ const CloseButton = styled.button`
   }
 `;
 
-const Dialog: React.FC<DialogProps> = ({ message, type, onClose }) => {
+const Dialog: React.FC<DialogProps> = ({ message, type, onClose, buttonText = 'Close' }) => {
   return (
     <DialogOverlay onClick={onClose}>
       <DialogContent type={type} onClick={e => e.stopPropagation()}>
         <DialogMessage>{message}</DialogMessage>
-        <CloseButton onClick={onClose}>Close</CloseButton>
+        <CloseButton onClick={onClose}>{buttonText}</CloseButton>
       </DialogContent>
     </DialogOverlay>
   );

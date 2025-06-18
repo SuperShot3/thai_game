@@ -242,6 +242,23 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     return () => clearInterval(timer);
   }, [difficulty, generateNewSentence]);
 
+  useEffect(() => {
+    if (isComplete && isCorrect) {
+      // Handle correct answer progression
+      const timer = setTimeout(() => {
+        // Check if we need to move to next level
+        if (userService.isLevelComplete(difficulty) && difficulty !== 'advanced') {
+          // Level is complete, let the parent component handle progression
+          return;
+        }
+        // Generate new sentence for current level
+        generateNewSentence();
+      }, 1000); // Small delay to show the correct answer briefly
+
+      return () => clearTimeout(timer);
+    }
+  }, [isComplete, isCorrect, difficulty, generateNewSentence]);
+
   const handleDragStart = (index: number) => {
     setIsDragging(true);
   };
@@ -295,21 +312,27 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
 
     const isAnswerCorrect = userAnswer.join('') === currentSentence.thai.join('');
     setIsCorrect(isAnswerCorrect);
-      setIsComplete(true);
-    setShowDialog(true);
+    setIsComplete(true);
 
     if (isAnswerCorrect) {
       setCorrectWords(prev => prev + 1);
       const updatedProgress = userService.updateProgress(difficulty, true);
       if (updatedProgress) {
-      onLevelComplete(difficulty);
+        // Check if level is complete
         if (userService.isLevelComplete(difficulty)) {
-          setShowCompletionDialog(true);
+          // Only show completion dialog if this is the final level (advanced)
+          if (difficulty === 'advanced') {
+            setShowCompletionDialog(true);
+          }
         }
+        // Always call onLevelComplete to handle progression
+        onLevelComplete(difficulty);
       }
     } else {
       setIncorrectWords(prev => prev + 1);
       userService.updateProgress(difficulty, false);
+      // Only show dialog for incorrect answers
+      setShowDialog(true);
     }
   };
 
@@ -325,16 +348,13 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
 
   const handleTryAgain = () => {
     setShowDialog(false);
-    if (isCorrect) {
-      generateNewSentence();
-    } else {
-      setIsComplete(false);
-      setIsCorrect(false);
-      setUserAnswer(Array(currentSentence?.thaiWords.length || 0).fill(''));
-      setShuffledWords(prev => 
-        prev.map(word => ({ ...word, isInUse: false }))
-      );
-    }
+    // Reset for retry on same sentence (only for incorrect answers)
+    setIsComplete(false);
+    setIsCorrect(false);
+    setUserAnswer(Array(currentSentence?.thaiWords.length || 0).fill(''));
+    setShuffledWords(prev => 
+      prev.map(word => ({ ...word, isInUse: false }))
+    );
   };
 
   const toggleHint = () => {
@@ -444,10 +464,8 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
 
         {showDialog && (
           <Dialog
-            message={isCorrect ? 
-              "Congratulations! Your answer is correct!" : 
-              "Try again! Your answer is incorrect."}
-            type={isCorrect ? 'success' : 'error'}
+            message="Try again! Your answer is incorrect."
+            type="error"
             onClose={handleTryAgain}
           />
         )}

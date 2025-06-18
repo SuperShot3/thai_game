@@ -143,11 +143,13 @@ const LeaderboardSection = styled.div`
   padding: 0 1rem;
   flex-shrink: 0;
   min-height: 400px; /* Ensure minimum height for visibility */
+  max-height: 80vh; /* Limit maximum height */
   background: rgba(255, 255, 255, 0.8);
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(0, 0, 0, 0.1);
   animation: slideDown 0.3s ease-out;
+  overflow: hidden; /* Prevent content from spilling out */
   
   @keyframes slideDown {
     from {
@@ -158,6 +160,14 @@ const LeaderboardSection = styled.div`
       opacity: 1;
       transform: translateY(0);
     }
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    margin: 0 0 1rem 0;
+    padding: 0 0.5rem;
+    min-height: 300px;
+    max-height: 70vh;
   }
 `;
 
@@ -174,6 +184,8 @@ const App: React.FC = () => {
   const [dialogType, setDialogType] = useState<'success' | 'error'>('success');
   const [isCommercialMode, setIsCommercialMode] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [isGameCompleted, setIsGameCompleted] = useState(false);
+  const [dialogButtonText, setDialogButtonText] = useState('Close');
 
   useEffect(() => {
     // Initialize progress from user service
@@ -228,26 +240,57 @@ const App: React.FC = () => {
       }));
 
       if (newProgressPercentage >= 100) {
-        const nextLevel = userService.getNextLevel(difficulty);
-        if (nextLevel) {
-          setDifficulty(nextLevel);
-          setDialogMessage('Level completed! Moving to the next level.');
+        // Check if this is the final level (advanced)
+        if (difficulty === 'advanced') {
+          // Game completed - show final completion message
+          setDialogMessage('🎉 Congratulations! You have completed ALL levels! You are now a Thai sentence master! 🏆');
           setDialogType('success');
+          setDialogButtonText('Play Again');
+          setShowDialog(true);
+          setIsGameCompleted(true);
         } else {
-          setDialogMessage('Congratulations! You have completed all levels!');
-          setDialogType('success');
+          // Move to next level
+          const nextLevel = userService.getNextLevel(difficulty);
+          if (nextLevel) {
+            setDifficulty(nextLevel);
+            setDialogMessage(`🎊 Level ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)} completed! Moving to ${nextLevel.charAt(0).toUpperCase() + nextLevel.slice(1)} level.`);
+            setDialogType('success');
+            setDialogButtonText('Next Level');
+            setShowDialog(true);
+          }
         }
       } else {
+        // Still working on current level
         const remaining = 5 - userProgress.correctWords;
-        setDialogMessage(`Great job! ${remaining} more sentences to complete this level.`);
+        setDialogMessage(`Great job! ${remaining} more sentence${remaining !== 1 ? 's' : ''} to complete this level.`);
         setDialogType('success');
+        setDialogButtonText('Continue');
+        setShowDialog(true);
       }
-      setShowDialog(true);
     }
   };
 
   const handleDialogClose = () => {
     setShowDialog(false);
+    // If game is completed, offer restart option
+    if (isGameCompleted) {
+      if (window.confirm('Would you like to restart the game and play again?')) {
+        handleGameRestart();
+      }
+    }
+  };
+
+  const handleGameRestart = () => {
+    setIsGameCompleted(false);
+    setDifficulty('beginner');
+    setProgress({
+      beginner: 0,
+      intermediate: 0,
+      advanced: 0
+    });
+    userService.clearUser();
+    // Reset to user form
+    setShowUserForm(true);
   };
 
   const getLockedLevels = (): Difficulty[] => {
@@ -370,6 +413,7 @@ const App: React.FC = () => {
             message={dialogMessage}
             type={dialogType}
             onClose={handleDialogClose}
+            buttonText={dialogButtonText}
           />
         )}
       </AppContainer>
