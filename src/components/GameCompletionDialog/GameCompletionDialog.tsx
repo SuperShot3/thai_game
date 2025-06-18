@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { userService } from '../../services/userService';
 import { Difficulty } from '../../types';
+import { leaderboardService } from '../Leaderboard/leaderboardService';
 
 interface GameCompletionDialogProps {
   onClose: () => void;
@@ -145,7 +146,7 @@ const GameCompletionDialog: React.FC<GameCompletionDialogProps> = ({
   }, [currentUser]);
 
   const handleSubmit = async () => {
-    await userService.addToLeaderboard({
+    await leaderboardService.addEntry({
       name: name || undefined,
       correctWords,
       incorrectWords,

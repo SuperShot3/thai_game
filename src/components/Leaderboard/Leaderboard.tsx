@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
-import { userService } from '../../services/userService';
-import { LeaderboardEntry } from '../../types/leaderboard';
+import { leaderboardService } from './leaderboardService';
+import { LeaderboardEntry, LeaderboardProps } from './types';
 
 const Container = styled.div`
   width: 100%;
@@ -96,7 +96,22 @@ const ErrorState = styled(EmptyState)`
   color: #e74c3c;
 `;
 
-
+const CloseButton = styled.button`
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: #f44336;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-weight: bold;
+  
+  &:hover {
+    background: #d32f2f;
+  }
+`;
 
 const formatTime = (seconds: number): string => {
   const hours = Math.floor(seconds / 3600);
@@ -109,7 +124,7 @@ const formatTime = (seconds: number): string => {
   return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
 };
 
-const Leaderboard: React.FC = () => {
+const Leaderboard: React.FC<LeaderboardProps> = ({ onClose, showCloseButton = false }) => {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -117,7 +132,7 @@ const Leaderboard: React.FC = () => {
   const fetchLeaderboard = async () => {
     try {
       setLoading(true);
-      const leaderboardData = await userService.getLeaderboard();
+      const leaderboardData = await leaderboardService.getEntries();
       setEntries(leaderboardData);
       setError(null);
     } catch (err) {
@@ -128,8 +143,6 @@ const Leaderboard: React.FC = () => {
     }
   };
 
-
-
   useEffect(() => {
     fetchLeaderboard();
     const intervalId = setInterval(fetchLeaderboard, 30000);
@@ -138,6 +151,9 @@ const Leaderboard: React.FC = () => {
 
   return (
     <Container>
+      {showCloseButton && onClose && (
+        <CloseButton onClick={onClose}>✕ Close</CloseButton>
+      )}
       <Title>Leaderboard</Title>
       {loading ? (
         <LoadingState>Loading leaderboard...</LoadingState>

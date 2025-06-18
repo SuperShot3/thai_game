@@ -232,6 +232,20 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
       const now = Date.now();
       const elapsed = Math.floor((now - startTimeRef.current) / 1000);
       setElapsedTime(elapsed);
+
+      // Update progress with new total time
+      const currentProgress = userService.getProgress(difficulty) || {
+        totalTime: 0,
+        timestamp: startTimeRef.current,
+        correctWords: 0,
+        incorrectWords: 0
+      };
+
+      userService.updateProgress(difficulty, {
+        ...currentProgress,
+        totalTime: currentProgress.totalTime + 1, // Add one second
+        timestamp: now
+      });
     }, 1000);
 
     return () => clearInterval(timer);
@@ -300,22 +314,40 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
   };
 
   const checkAnswer = () => {
-    if (!currentSentence) return;
+    if (!currentSentence) return false;
+    return userAnswer.join(' ') === currentSentence.thaiWords.join(' ');
+  };
 
-    const isAnswerCorrect = userAnswer.join(' ') === currentSentence.thaiWords.join(' ');
-    setIsCorrect(isAnswerCorrect);
+  const handleAnswerCheck = () => {
+    const isAnswerCorrect = checkAnswer();
     setIsComplete(true);
+    setIsCorrect(isAnswerCorrect);
+
+    const currentProgress = userService.getProgress(difficulty) || {
+      totalTime: 0,
+      timestamp: Date.now(),
+      correctWords: 0,
+      incorrectWords: 0
+    };
 
     if (isAnswerCorrect) {
       setCorrectWords(prev => prev + 1);
-      const progress = userService.updateProgress(difficulty, true);
+      userService.updateProgress(difficulty, {
+        ...currentProgress,
+        correctWords: currentProgress.correctWords + 1,
+        timestamp: Date.now()
+      });
       
       if (userService.isLevelComplete(difficulty)) {
         setShowCompletionDialog(true);
       }
     } else {
       setIncorrectWords(prev => prev + 1);
-      userService.updateProgress(difficulty, false);
+      userService.updateProgress(difficulty, {
+        ...currentProgress,
+        incorrectWords: currentProgress.incorrectWords + 1,
+        timestamp: Date.now()
+      });
       setShowDialog(true);
     }
   };
@@ -419,7 +451,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
       <ButtonContainer>
         <Button 
           variant="primary" 
-          onClick={checkAnswer}
+          onClick={handleAnswerCheck}
           disabled={isComplete || userAnswer.some(word => !word)}
         >
           Check Answer

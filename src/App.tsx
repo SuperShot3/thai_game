@@ -154,17 +154,18 @@ const Button = styled.button`
 const LeaderboardSection = styled.div`
   width: 100%;
   max-width: 800px;
-  margin: 0 0 2rem 0; /* Reduced top margin, increased bottom margin */
+  margin: 0 0 2rem 0;
   padding: 0 1rem;
   flex-shrink: 0;
-  min-height: 400px; /* Ensure minimum height for visibility */
-  max-height: 80vh; /* Limit maximum height */
+  min-height: 400px;
+  max-height: 80vh;
   background: rgba(255, 255, 255, 0.8);
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(0, 0, 0, 0.1);
   animation: slideDown 0.3s ease-out;
-  overflow: hidden; /* Prevent content from spilling out */
+  overflow: hidden;
+  position: relative;
   
   @keyframes slideDown {
     from {
@@ -177,7 +178,6 @@ const LeaderboardSection = styled.div`
     }
   }
   
-  /* Responsive adjustments */
   @media (max-width: 768px) {
     margin: 0 0 1rem 0;
     padding: 0 0.5rem;
@@ -362,33 +362,7 @@ const App: React.FC = () => {
           
           {showLeaderboard && (
             <LeaderboardSection>
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center', 
-                marginBottom: '1rem',
-                padding: '1rem',
-                background: 'rgba(0, 0, 0, 0.05)',
-                borderRadius: '8px',
-                border: '2px solid #4CAF50'
-              }}>
-                <h3 style={{ margin: 0, color: '#4CAF50', fontWeight: 'bold' }}>🏆 Leaderboard</h3>
-                <Button 
-                  onClick={handleHideLeaderboard}
-                  style={{
-                    background: '#f44336',
-                    color: 'white',
-                    padding: '0.5rem 1rem',
-                    fontSize: '0.9rem',
-                    fontWeight: 'bold',
-                    border: '2px solid #d32f2f',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-                  }}
-                >
-                  ✕ Close Leaderboard
-                </Button>
-              </div>
-              <Leaderboard />
+              <Leaderboard onClose={handleHideLeaderboard} showCloseButton={true} />
             </LeaderboardSection>
           )}
           
@@ -411,7 +385,7 @@ const App: React.FC = () => {
           <FeedbackButton onClick={() => setShowFeedbackModal(true)} />
         </FirstPageContainer>
         <FeedbackModal 
-          isOpen={showFeedbackModal} 
+          isOpen={showFeedbackModal}
           onClose={() => setShowFeedbackModal(false)} 
         />
       </>
