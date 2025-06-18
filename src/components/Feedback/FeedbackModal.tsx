@@ -152,7 +152,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose }) => {
       // Method 1: Try JSON POST first
       let response;
       try {
-        response = await fetch('https://script.google.com/macros/s/AKfycbyY-SD0I7-oVu4pbnTRJTcpsL6kVeEkKO8g9Dq0c2Y2ezFbl0SUgpo4orwm4cmAbQhWhQ/exec', {
+        response = await fetch('https://script.google.com/macros/s/AKfycbzChuTWF5t658itIu8xRSKKVru42FJvoJAwB3c4sPNw9M1L2E2UmFhdoS8sy3qAKoSVNw/exec', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -166,7 +166,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose }) => {
         const formData = new FormData();
         formData.append('message', message.trim());
         
-        response = await fetch('https://script.google.com/macros/s/AKfycbyY-SD0I7-oVu4pbnTRJTcpsL6kVeEkKO8g9Dq0c2Y2ezFbl0SUgpo4orwm4cmAbQhWhQ/exec', {
+        response = await fetch('https://script.google.com/macros/s/AKfycbzChuTWF5t658itIu8xRSKKVru42FJvoJAwB3c4sPNw9M1L2E2UmFhdoS8sy3qAKoSVNw/exec', {
           method: 'POST',
           body: formData,
         });
@@ -232,7 +232,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose }) => {
         // Create a hidden form
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = 'https://script.google.com/macros/s/AKfycbyY-SD0I7-oVu4pbnTRJTcpsL6kVeEkKO8g9Dq0c2Y2ezFbl0SUgpo4orwm4cmAbQhWhQ/exec';
+        form.action = 'https://script.google.com/macros/s/AKfycbzChuTWF5t658itIu8xRSKKVru42FJvoJAwB3c4sPNw9M1L2E2UmFhdoS8sy3qAKoSVNw/exec';
         form.style.display = 'none';
         form.target = '_blank';
 
