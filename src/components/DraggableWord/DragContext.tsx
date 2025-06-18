@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 
 interface DragState {
   word: string;
@@ -20,17 +20,20 @@ const DragContext = createContext<DragContextType | undefined>(undefined);
 export const DragProvider = ({ children }: { children: ReactNode }) => {
   const [dragState, setDragState] = useState<DragState | null>(null);
 
-  const startDrag = (word: string, fontClass: string, x: number, y: number) => {
+  const startDrag = useCallback((word: string, fontClass: string, x: number, y: number) => {
     setDragState({ word, fontClass, x, y, isDragging: true });
-  };
+  }, []);
 
-  const updateDrag = (x: number, y: number) => {
-    setDragState(prev => prev ? { ...prev, x, y } : prev);
-  };
+  const updateDrag = useCallback((x: number, y: number) => {
+    setDragState(prev => {
+      if (!prev || !prev.isDragging) return prev;
+      return { ...prev, x, y };
+    });
+  }, []);
 
-  const stopDrag = () => {
+  const stopDrag = useCallback(() => {
     setDragState(null);
-  };
+  }, []);
 
   return (
     <DragContext.Provider value={{ dragState, startDrag, updateDrag, stopDrag }}>

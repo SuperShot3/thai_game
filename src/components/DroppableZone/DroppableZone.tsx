@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import styled from 'styled-components';
 import { useDragContext } from '../DraggableWord/DragContext';
 
@@ -106,25 +106,14 @@ const DroppableZone: React.FC<DroppableZoneProps> = ({
     setIsDragOver(dragState?.isDragging || false);
   }, [dragState?.isDragging]);
 
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    e.dataTransfer.dropEffect = 'move';
-  };
-
-  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     onDrop(e);
-  };
+  }, [onDrop]);
 
   // Handle pointer-based drops
-  const handlePointerUp = (e: React.PointerEvent) => {
+  const handlePointerUp = useCallback((e: React.PointerEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -132,31 +121,15 @@ const DroppableZone: React.FC<DroppableZoneProps> = ({
       onDrop({ word: dragState.word });
       stopDrag();
     }
-  };
-
-  // Handle pointer enter for better visual feedback
-  const handlePointerEnter = (e: React.PointerEvent) => {
-    e.preventDefault();
-    if (dragState?.isDragging) {
-      setIsDragOver(true);
-    }
-  };
-
-  // Handle pointer leave
-  const handlePointerLeave = (e: React.PointerEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-  };
+  }, [dragState?.isDragging, dragState?.word, onDrop, stopDrag]);
 
   return (
     <DropZone
       ref={zoneRef}
       onDrop={handleDrop}
-      onDragOver={handleDragOver}
-      onDragEnter={handleDragEnter}
+      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+      onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); }}
       onPointerUp={handlePointerUp}
-      onPointerEnter={handlePointerEnter}
-      onPointerLeave={handlePointerLeave}
       hasWord={!!word}
       isComplete={isComplete}
       isCorrect={isCorrect}

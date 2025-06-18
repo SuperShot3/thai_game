@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import styled from 'styled-components';
 import { useDragContext } from './DragContext';
 
@@ -20,20 +20,29 @@ const DragPreview = styled.div<{ x: number; y: number; isVisible: boolean }>`
   opacity: ${({ isVisible }) => isVisible ? 0.8 : 0};
   transform: rotate(5deg) scale(0.9);
   transition: opacity 0.1s ease;
+  will-change: transform, opacity;
 `;
 
-const DragLayer: React.FC = () => {
+const DragLayer: React.FC = React.memo(() => {
   const { dragState } = useDragContext();
-  if (!dragState || !dragState.isDragging) return null;
+  
+  const shouldRender = useMemo(() => {
+    return dragState?.isDragging && dragState.word;
+  }, [dragState?.isDragging, dragState?.word]);
+
+  if (!shouldRender) return null;
+
   return (
     <DragPreview
-      x={dragState.x - 20}
-      y={dragState.y - 20}
-      isVisible={dragState.isDragging}
+      x={dragState!.x - 20}
+      y={dragState!.y - 20}
+      isVisible={dragState!.isDragging}
     >
-      <span className={dragState.fontClass}>{dragState.word}</span>
+      <span className={dragState!.fontClass}>{dragState!.word}</span>
     </DragPreview>
   );
-};
+});
+
+DragLayer.displayName = 'DragLayer';
 
 export default DragLayer; 

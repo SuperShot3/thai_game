@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
 import styled from 'styled-components';
 import { useDragContext } from './DragContext';
 
@@ -57,53 +57,91 @@ const DraggableWord: React.FC<DraggableWordProps> = ({
   const [dragStartPos, setDragStartPos] = useState({ x: 0, y: 0 });
   const [isPointerDown, setIsPointerDown] = useState(false);
   const { startDrag, updateDrag, stopDrag } = useDragContext();
+  
+  // Use refs for better performance
+  const isDraggingRef = useRef(false);
+  const dragStartPosRef = useRef({ x: 0, y: 0 });
+  const animationFrameRef = useRef<number>();
+
+  // Optimized drag update using requestAnimationFrame
+  const updateDragPosition = useCallback((x: number, y: number) => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+    animationFrameRef.current = requestAnimationFrame(() => {
+      updateDrag(x, y);
+    });
+  }, [updateDrag]);
 
   // Handle pointer events for cross-platform drag support
-  const handlePointerDown = (e: React.PointerEvent) => {
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
     if (isInUse) return;
     e.preventDefault();
     e.stopPropagation();
+    
     setIsPointerDown(true);
+    isDraggingRef.current = false;
     setDragStartPos({ x: e.clientX, y: e.clientY });
+    dragStartPosRef.current = { x: e.clientX, y: e.clientY };
+    
     if (cardRef.current) {
       cardRef.current.setPointerCapture(e.pointerId);
     }
-  };
+  }, [isInUse]);
 
-  const handlePointerMove = (e: React.PointerEvent) => {
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
     if (!isPointerDown || isInUse) return;
     e.preventDefault();
     e.stopPropagation();
-    const deltaX = Math.abs(e.clientX - dragStartPos.x);
-    const deltaY = Math.abs(e.clientY - dragStartPos.y);
-    if (!isDragging && (deltaX > 3 || deltaY > 3)) {
+    
+    const deltaX = Math.abs(e.clientX - dragStartPosRef.current.x);
+    const deltaY = Math.abs(e.clientY - dragStartPosRef.current.y);
+    
+    if (!isDraggingRef.current && (deltaX > 5 || deltaY > 5)) {
+      isDraggingRef.current = true;
       setIsDragging(true);
       startDrag(word, fontClass, e.clientX, e.clientY);
     }
-    if (isDragging) {
-      updateDrag(e.clientX, e.clientY);
+    
+    if (isDraggingRef.current) {
+      updateDragPosition(e.clientX, e.clientY);
     }
-  };
+  }, [isPointerDown, isInUse, word, fontClass, startDrag, updateDragPosition]);
 
-  const handlePointerUp = (e: React.PointerEvent) => {
+  const handlePointerUp = useCallback((e: React.PointerEvent) => {
     if (!isPointerDown) return;
     e.preventDefault();
     e.stopPropagation();
+    
     setIsPointerDown(false);
-    if (isDragging) {
+    if (isDraggingRef.current) {
       setIsDragging(false);
+      isDraggingRef.current = false;
       stopDrag();
     }
+    
     if (cardRef.current) {
       cardRef.current.releasePointerCapture(e.pointerId);
     }
-  };
+  }, [isPointerDown, stopDrag]);
 
-  const handlePointerLeave = (e: React.PointerEvent) => {
+  const handlePointerLeave = useCallback((e: React.PointerEvent) => {
     if (isPointerDown) {
       handlePointerUp(e);
     }
-  };
+  }, [isPointerDown, handlePointerUp]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (isDraggingRef.current) {
+        stopDrag();
+      }
+    };
+  }, [stopDrag]);
 
   return (
     <WordCard
