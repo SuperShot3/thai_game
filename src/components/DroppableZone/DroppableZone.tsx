@@ -33,9 +33,11 @@ const DropZone = styled.div<{
     if (hasWord) return 'rgba(255, 255, 255, 0.05)';
     return 'transparent';
   }};
-  transition: all 0.2s ease;
+  transition: transform 0.1s ease, background 0.1s ease, border-color 0.1s ease;
   cursor: pointer;
   position: relative;
+  will-change: transform, background, border-color;
+  touch-action: none;
 
   &:hover {
     background: ${({ hasWord, isComplete }) => {
@@ -53,7 +55,7 @@ const WordText = styled.span<{ isComplete: boolean; isCorrect: boolean }>`
     return 'rgba(255, 255, 255, 0.9)';
   }};
   font-size: 1.1rem;
-  transition: color 0.2s ease;
+  transition: color 0.1s ease;
 `;
 
 const RemoveButton = styled.button`
@@ -72,7 +74,7 @@ const RemoveButton = styled.button`
   cursor: pointer;
   font-size: 14px;
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.1s ease, background 0.1s ease;
   padding: 0;
 
   &:hover {
@@ -90,13 +92,26 @@ const DroppableZone: React.FC<DroppableZoneProps> = ({
 }) => {
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+    e.stopPropagation();
     e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onDrop(e);
   };
 
   return (
     <DropZone
-      onDrop={onDrop}
+      onDrop={handleDrop}
       onDragOver={handleDragOver}
+      onDragEnter={handleDragEnter}
       hasWord={!!word}
       isComplete={isComplete}
       isCorrect={isCorrect}
