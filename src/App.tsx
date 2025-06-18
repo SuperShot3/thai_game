@@ -120,7 +120,7 @@ const App: React.FC = () => {
         newProgress[diff as Difficulty] = (userProgress.correctWords / 5) * 100; // 5 is the target for level completion
       }
     });
-
+    
     setProgress(newProgress);
   };
 
@@ -200,9 +200,9 @@ const App: React.FC = () => {
     return (
       <>
         <GlobalStyle />
-        <AppContainer>
-          <Title>Thai Sentence Builder</Title>
-          <UserForm onSubmit={handleUserSubmit} onSkip={handleSkip} />
+      <AppContainer>
+        <Title>Thai Sentence Builder</Title>
+        <UserForm onSubmit={handleUserSubmit} onSkip={handleSkip} />
           <Button onClick={() => setShowLeaderboard(true)}>View Leaderboard</Button>
           {showLeaderboard && (
             <>
@@ -210,7 +210,7 @@ const App: React.FC = () => {
               <Leaderboard />
             </>
           )}
-        </AppContainer>
+      </AppContainer>
       </>
     );
   }

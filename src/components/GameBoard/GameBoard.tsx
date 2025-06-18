@@ -286,14 +286,14 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
 
     const isAnswerCorrect = userAnswer.join('') === currentSentence.thai.join('');
     setIsCorrect(isAnswerCorrect);
-    setIsComplete(true);
+      setIsComplete(true);
     setShowDialog(true);
 
     if (isAnswerCorrect) {
       setCorrectWords(prev => prev + 1);
       const updatedProgress = userService.updateProgress(difficulty, true);
       if (updatedProgress) {
-        onLevelComplete(difficulty);
+      onLevelComplete(difficulty);
         if (userService.isLevelComplete(difficulty)) {
           setShowCompletionDialog(true);
         }
@@ -376,9 +376,9 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
               : 'Click hint to see word hints'}
           </EnglishText>
           <div style={{ display: 'flex', gap: '10px' }}>
-            <HintButton onClick={toggleHint}>
-              {showHint ? 'Hide Hint' : 'Show Hint'}
-            </HintButton>
+          <HintButton onClick={toggleHint}>
+            {showHint ? 'Hide Hint' : 'Show Hint'}
+          </HintButton>
             {showHint && currentSentence.hints.length > 1 && (
               <HintButton onClick={showNextHint}>
                 Next Hint
