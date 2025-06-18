@@ -181,6 +181,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
   const [currentSentence, setCurrentSentence] = useState<ThaiSentence | null>(null);
   const [shuffledWords, setShuffledWords] = useState<string[]>([]);
   const [userAnswer, setUserAnswer] = useState<string[]>([]);
+  const [usedWords, setUsedWords] = useState<Set<string>>(new Set());
   const [isComplete, setIsComplete] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
@@ -217,6 +218,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     setCurrentFont(getRandomFont());
     setShuffledWords(shuffleArray(newSentence.thaiWords));
     setUserAnswer([]);
+    setUsedWords(new Set()); // Reset used words for new sentence
     setIsComplete(false);
     setIsCorrect(false);
     setShowDialog(false);
@@ -254,7 +256,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
 
   const handleDrop = (word: string, position: number) => {
     // Check if the word is already used
-    if (userAnswer.includes(word)) {
+    if (usedWords.has(word)) {
       return;
     }
 
@@ -267,6 +269,9 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     const newUserAnswer = [...userAnswer];
     newUserAnswer[position] = word;
     setUserAnswer(newUserAnswer);
+    
+    // Mark word as used
+    setUsedWords(prev => new Set([...Array.from(prev), word]));
 
     // Check if sentence is complete
     const isComplete = newUserAnswer.every(word => word !== '');
@@ -333,6 +338,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     if (isComplete) return;
 
     setUserAnswer(Array(currentSentence?.thaiWords.length || 0).fill(''));
+    setUsedWords(new Set()); // Reset used words
   };
 
   const handleTryAgain = () => {
@@ -341,6 +347,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     setIsComplete(false);
     setIsCorrect(false);
     setUserAnswer(Array(currentSentence?.thaiWords.length || 0).fill(''));
+    setUsedWords(new Set()); // Reset used words
   };
 
   const toggleHint = () => {
@@ -412,6 +419,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
             key={`${word}-${index}`}
             word={word}
             fontClass={currentFont}
+            isUsed={usedWords.has(word)}
             onDragStart={() => {
               // Optional: Add any drag start logic
             }}

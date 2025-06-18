@@ -18,7 +18,7 @@ const DroppableZone: React.FC<DroppableZoneProps> = ({
   fontClass 
 }) => {
   const zoneRef = useRef<HTMLDivElement>(null);
-  const { dragState, registerDropZone, unregisterDropZone, getActiveDropZone } = useDragContext();
+  const { dragState, registerDropZone, unregisterDropZone, getActiveDropZone, cancelDrag } = useDragContext();
   const [isDragOver, setIsDragOver] = useState(false);
   const zoneId = `drop-zone-${position}`;
 
@@ -57,8 +57,12 @@ const DroppableZone: React.FC<DroppableZoneProps> = ({
       // Use the active drop zone from context instead of relying on pointer position
       const activeZoneId = getActiveDropZone();
       
-      if (activeZoneId === zoneId) {
+      if (activeZoneId === zoneId && !isFilled) {
+        // Valid drop - word is over this zone and zone is empty
         onDrop(dragState.word, position);
+      } else {
+        // Invalid drop - cancel the drag
+        cancelDrag();
       }
     }
   };

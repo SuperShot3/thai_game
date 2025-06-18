@@ -7,19 +7,23 @@ interface DraggableWordProps {
   fontClass: string;
   onDragStart?: () => void;
   onDragEnd?: () => void;
+  isUsed?: boolean;
 }
 
 const DraggableWord: React.FC<DraggableWordProps> = ({ 
   word, 
   fontClass, 
   onDragStart, 
-  onDragEnd 
+  onDragEnd,
+  isUsed = false
 }) => {
   const wordRef = useRef<HTMLDivElement>(null);
   const { startDrag, updateDrag, stopDrag, dragState } = useDragContext();
   const isDraggingThis = dragState?.word === word && dragState?.isDragging;
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    if (isUsed) return; // Prevent dragging used words
+    
     e.preventDefault();
     e.stopPropagation();
     
@@ -33,7 +37,7 @@ const DraggableWord: React.FC<DraggableWordProps> = ({
       // Set pointer capture for better touch handling
       wordRef.current.setPointerCapture(e.pointerId);
     }
-  }, [word, fontClass, startDrag, onDragStart]);
+  }, [word, fontClass, startDrag, onDragStart, isUsed]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     e.preventDefault();
@@ -103,18 +107,14 @@ const DraggableWord: React.FC<DraggableWordProps> = ({
   return (
     <div
       ref={wordRef}
-      className={`draggable-word ${fontClass} ${isDraggingThis ? 'dragging' : ''}`}
+      className={`draggable-word ${fontClass} ${isDraggingThis ? 'dragging' : ''} ${isUsed ? 'used' : ''}`}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerCancel}
       draggable={false}
       style={{
-        position: isDraggingThis ? 'fixed' : 'relative',
-        left: isDraggingThis ? dragState!.x - 50 : 'auto',
-        top: isDraggingThis ? dragState!.y - 25 : 'auto',
-        zIndex: isDraggingThis ? 1000 : 'auto',
-        pointerEvents: isDraggingThis ? 'none' : 'auto',
+        visibility: isDraggingThis ? 'hidden' : 'visible',
       }}
     >
       {word}

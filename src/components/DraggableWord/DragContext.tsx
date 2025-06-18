@@ -20,6 +20,7 @@ interface DragContextType {
   startDrag: (word: string, fontClass: string, x: number, y: number) => void;
   updateDrag: (x: number, y: number) => void;
   stopDrag: () => void;
+  cancelDrag: () => void;
   registerDropZone: (id: string, rect: DOMRect, position: number) => void;
   unregisterDropZone: (id: string) => void;
   getActiveDropZone: () => string | null;
@@ -80,6 +81,10 @@ export const DragProvider = ({ children }: { children: ReactNode }) => {
     setDragState(null);
   }, []);
 
+  const cancelDrag = useCallback(() => {
+    setDragState(null);
+  }, []);
+
   const registerDropZone = useCallback((id: string, rect: DOMRect, position: number) => {
     setDropZones(prev => {
       const newMap = new Map(prev);
@@ -106,6 +111,7 @@ export const DragProvider = ({ children }: { children: ReactNode }) => {
       startDrag, 
       updateDrag, 
       stopDrag, 
+      cancelDrag,
       registerDropZone, 
       unregisterDropZone, 
       getActiveDropZone,
