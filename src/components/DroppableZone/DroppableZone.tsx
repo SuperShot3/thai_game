@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
+import { useDragContext } from '../DraggableWord/DragContext';
 
 interface DroppableZoneProps {
   onDrop: (e: React.DragEvent<HTMLDivElement> | { word: string }) => void;
@@ -98,20 +99,12 @@ const DroppableZone: React.FC<DroppableZoneProps> = ({
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const zoneRef = useRef<HTMLDivElement>(null);
+  const { dragState, stopDrag } = useDragContext();
 
-  // Check for global drag data with reduced frequency
+  // Update drag over state based on drag context
   useEffect(() => {
-    const checkDragData = () => {
-      if ((window as any).__dragData && (window as any).__dragData.type === 'word') {
-        setIsDragOver(true);
-      } else {
-        setIsDragOver(false);
-      }
-    };
-
-    const interval = setInterval(checkDragData, 100); // Reduced from 50ms to 100ms
-    return () => clearInterval(interval);
-  }, []);
+    setIsDragOver(dragState?.isDragging || false);
+  }, [dragState?.isDragging]);
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -135,17 +128,16 @@ const DroppableZone: React.FC<DroppableZoneProps> = ({
     e.preventDefault();
     e.stopPropagation();
     
-    if ((window as any).__dragData && (window as any).__dragData.type === 'word') {
-      const dragData = (window as any).__dragData;
-      onDrop({ word: dragData.word });
-      (window as any).__dragData = null;
+    if (dragState?.isDragging && dragState.word) {
+      onDrop({ word: dragState.word });
+      stopDrag();
     }
   };
 
   // Handle pointer enter for better visual feedback
   const handlePointerEnter = (e: React.PointerEvent) => {
     e.preventDefault();
-    if ((window as any).__dragData && (window as any).__dragData.type === 'word') {
+    if (dragState?.isDragging) {
       setIsDragOver(true);
     }
   };

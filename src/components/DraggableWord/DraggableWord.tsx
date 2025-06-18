@@ -1,5 +1,6 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState } from 'react';
 import styled from 'styled-components';
+import { useDragContext } from './DragContext';
 
 interface DraggableWordProps {
   word: string;
@@ -45,26 +46,6 @@ const WordText = styled.span`
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 `;
 
-const DragPreview = styled.div<{ isVisible: boolean; x: number; y: number }>`
-  position: fixed;
-  top: ${({ y }) => y}px;
-  left: ${({ x }) => x}px;
-  background: rgba(255, 255, 255, 0.2);
-  border: 2px solid rgba(255, 255, 255, 0.4);
-  border-radius: 8px;
-  padding: 12px 20px;
-  color: #fff;
-  font-size: 1.1rem;
-  font-weight: 500;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-  pointer-events: none;
-  z-index: 10000;
-  opacity: ${({ isVisible }) => isVisible ? 0.8 : 0};
-  transform: rotate(5deg) scale(0.9);
-  transition: opacity 0.1s ease;
-`;
-
 const DraggableWord: React.FC<DraggableWordProps> = ({
   word,
   index,
@@ -74,20 +55,16 @@ const DraggableWord: React.FC<DraggableWordProps> = ({
   const cardRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStartPos, setDragStartPos] = useState({ x: 0, y: 0 });
-  const [currentPos, setCurrentPos] = useState({ x: 0, y: 0 });
   const [isPointerDown, setIsPointerDown] = useState(false);
+  const { startDrag, updateDrag, stopDrag } = useDragContext();
 
   // Handle pointer events for cross-platform drag support
   const handlePointerDown = (e: React.PointerEvent) => {
     if (isInUse) return;
-    
     e.preventDefault();
     e.stopPropagation();
-    
     setIsPointerDown(true);
     setDragStartPos({ x: e.clientX, y: e.clientY });
-    
-    // Set pointer capture for reliable tracking
     if (cardRef.current) {
       cardRef.current.setPointerCapture(e.pointerId);
     }
@@ -95,51 +72,28 @@ const DraggableWord: React.FC<DraggableWordProps> = ({
 
   const handlePointerMove = (e: React.PointerEvent) => {
     if (!isPointerDown || isInUse) return;
-    
     e.preventDefault();
     e.stopPropagation();
-    
     const deltaX = Math.abs(e.clientX - dragStartPos.x);
     const deltaY = Math.abs(e.clientY - dragStartPos.y);
-    
-    // Start dragging if moved more than 3px (reduced threshold for better responsiveness)
     if (!isDragging && (deltaX > 3 || deltaY > 3)) {
       setIsDragging(true);
-      setCurrentPos({ x: e.clientX, y: e.clientY });
-      
-      // Set global drag data
-      if (window) {
-        (window as any).__dragData = {
-          word,
-          index,
-          type: 'word'
-        };
-      }
+      startDrag(word, fontClass, e.clientX, e.clientY);
     }
-    
     if (isDragging) {
-      setCurrentPos({ x: e.clientX, y: e.clientY });
+      updateDrag(e.clientX, e.clientY);
     }
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
     if (!isPointerDown) return;
-    
     e.preventDefault();
     e.stopPropagation();
-    
     setIsPointerDown(false);
-    
     if (isDragging) {
       setIsDragging(false);
-      
-      // Clear global drag data
-      if (window) {
-        (window as any).__dragData = null;
-      }
+      stopDrag();
     }
-    
-    // Release pointer capture
     if (cardRef.current) {
       cardRef.current.releasePointerCapture(e.pointerId);
     }
@@ -151,41 +105,19 @@ const DraggableWord: React.FC<DraggableWordProps> = ({
     }
   };
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (isDragging) {
-        // Clear global drag data
-        if (window) {
-          (window as any).__dragData = null;
-        }
-      }
-    };
-  }, [isDragging]);
-
   return (
-    <>
-      <WordCard
-        ref={cardRef}
-        isInUse={isInUse}
-        isDragging={isDragging}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerLeave}
-        draggable={false}
-      >
-        <WordText className={fontClass}>{word}</WordText>
-      </WordCard>
-      
-      <DragPreview
-        isVisible={isDragging}
-        x={currentPos.x - 20}
-        y={currentPos.y - 20}
-      >
-        <span className={fontClass}>{word}</span>
-      </DragPreview>
-    </>
+    <WordCard
+      ref={cardRef}
+      isInUse={isInUse}
+      isDragging={isDragging}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerLeave={handlePointerLeave}
+      draggable={false}
+    >
+      <WordText className={fontClass}>{word}</WordText>
+    </WordCard>
   );
 };
 

@@ -8,6 +8,8 @@ import { Difficulty } from './types';
 import UserForm from './components/UserForm/UserForm';
 import Leaderboard from './components/Leaderboard/Leaderboard';
 import Dialog from './components/Dialog/Dialog';
+import { DragProvider } from './components/DraggableWord/DragContext';
+import DragLayer from './components/DraggableWord/DragLayer';
 
 const GlobalStyle = createGlobalStyle`
   * {
@@ -403,32 +405,35 @@ const App: React.FC = () => {
   }
 
   return (
-    <>
-      <GlobalStyle />
-      <AppContainer>
-        <Title>Thai Sentence Builder</Title>
-        <ProgressText>{getProgressText()}</ProgressText>
-        <DifficultySelector
-          currentDifficulty={difficulty}
-          progress={progress}
-          onLevelSelect={handleLevelSelect}
-          lockedLevels={getLockedLevels()}
-        />
-        <GameBoard
-          difficulty={difficulty}
-          onLevelComplete={handleLevelComplete}
-        />
-        <AdManager isCommercialMode={isCommercialMode} onToggleCommercialMode={handleToggleCommercialMode} />
-        {showDialog && (
-          <Dialog
-            message={dialogMessage}
-            type={dialogType}
-            onClose={handleDialogClose}
-            buttonText={dialogButtonText}
+    <DragProvider>
+      <>
+        <GlobalStyle />
+        <AppContainer>
+          <Title>Thai Sentence Builder</Title>
+          <ProgressText>{getProgressText()}</ProgressText>
+          <DifficultySelector
+            currentDifficulty={difficulty}
+            progress={progress}
+            onLevelSelect={handleLevelSelect}
+            lockedLevels={getLockedLevels()}
           />
-        )}
-      </AppContainer>
-    </>
+          <GameBoard
+            difficulty={difficulty}
+            onLevelComplete={handleLevelComplete}
+          />
+          <AdManager isCommercialMode={isCommercialMode} onToggleCommercialMode={handleToggleCommercialMode} />
+          {showDialog && (
+            <Dialog
+              message={dialogMessage}
+              type={dialogType}
+              onClose={handleDialogClose}
+              buttonText={dialogButtonText}
+            />
+          )}
+        </AppContainer>
+        <DragLayer />
+      </>
+    </DragProvider>
   );
 };
 
