@@ -110,6 +110,12 @@ const TestButton = styled.button`
   }
 `;
 
+const ButtonContainer = styled.div`
+  display: flex;
+  gap: 1rem;
+  margin: 1rem 0;
+`;
+
 const formatTime = (seconds: number): string => {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
@@ -149,6 +155,14 @@ const Leaderboard: React.FC = () => {
     }
   };
 
+  const handleTestConnection = async () => {
+    try {
+      await userService.testSupabaseConnection();
+    } catch (err) {
+      console.error('Error testing connection:', err);
+    }
+  };
+
   useEffect(() => {
     fetchLeaderboard();
     const intervalId = setInterval(fetchLeaderboard, 30000);
@@ -158,7 +172,10 @@ const Leaderboard: React.FC = () => {
   return (
     <Container>
       <Title>Leaderboard</Title>
-      <TestButton onClick={handleTestClick}>Add Test Entry</TestButton>
+      <ButtonContainer>
+        <TestButton onClick={handleTestClick}>Add Test Entry</TestButton>
+        <TestButton onClick={handleTestConnection}>Test Connection</TestButton>
+      </ButtonContainer>
       {loading ? (
         <LoadingState>Loading leaderboard...</LoadingState>
       ) : error ? (

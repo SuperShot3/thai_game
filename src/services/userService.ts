@@ -60,7 +60,13 @@ class UserService {
         .order('time', { ascending: true });
 
       if (error) {
-        console.error('Error loading leaderboard:', error);
+        console.error('Supabase Error:', error.message);
+        console.error('Error Details:', error);
+        return;
+      }
+
+      if (!data) {
+        console.error('No data received from Supabase');
         return;
       }
 
@@ -71,8 +77,13 @@ class UserService {
         incorrectWords: entry.incorrect,
         totalTime: entry.time
       }));
+      console.log('Processed leaderboard:', this.leaderboard);
     } catch (error) {
-      console.error('Error loading leaderboard:', error);
+      console.error('Unexpected error in loadLeaderboard:', error);
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+      }
     }
   }
 
@@ -160,23 +171,37 @@ class UserService {
     const name = entry.name || `Guest ${this.generateGuestNumber()}`;
     
     try {
-      const { error } = await supabase
+      console.log('Attempting to add entry to leaderboard:', {
+        player_name: name,
+        correct: entry.correctWords,
+        incorrect: entry.incorrectWords,
+        time: entry.totalTime
+      });
+
+      const { error, data } = await supabase
         .from('leaderboard')
         .insert([{
           player_name: name,
           correct: entry.correctWords,
           incorrect: entry.incorrectWords,
           time: entry.totalTime
-        }]);
+        }])
+        .select();
 
       if (error) {
-        console.error('Error adding to leaderboard:', error);
+        console.error('Supabase Insert Error:', error.message);
+        console.error('Error Details:', error);
         return;
       }
 
+      console.log('Entry added successfully:', data);
       await this.loadLeaderboard();
     } catch (error) {
-      console.error('Error adding to leaderboard:', error);
+      console.error('Unexpected error in addToLeaderboard:', error);
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+      }
     }
   }
 
@@ -236,6 +261,32 @@ class UserService {
       await this.loadLeaderboard();
     } catch (error) {
       console.error('Error in test:', error);
+    }
+  }
+
+  public async testSupabaseConnection(): Promise<void> {
+    try {
+      console.log('Testing Supabase connection...');
+      
+      // Test the connection by trying to get the current timestamp
+      const { data, error } = await supabase
+        .from('leaderboard')
+        .select('count()')
+        .limit(1);
+
+      if (error) {
+        console.error('Connection test failed:', error.message);
+        console.error('Error details:', error);
+        return;
+      }
+
+      console.log('Connection test successful:', data);
+    } catch (error) {
+      console.error('Connection test failed with unexpected error:', error);
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+      }
     }
   }
 }
