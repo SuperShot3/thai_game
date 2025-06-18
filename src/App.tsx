@@ -293,6 +293,12 @@ const App: React.FC = () => {
       if (window.confirm('Would you like to restart the game and play again?')) {
         handleGameRestart();
       }
+    } else if (dialogButtonText === 'Next Level') {
+      // Progress to next level
+      const nextLevel = userService.getNextLevel(difficulty);
+      if (nextLevel) {
+        setDifficulty(nextLevel);
+      }
     }
   };
 

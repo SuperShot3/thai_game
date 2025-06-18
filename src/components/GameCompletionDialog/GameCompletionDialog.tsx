@@ -111,6 +111,13 @@ const Input = styled.input`
   }
 `;
 
+const Message = styled.p`
+  text-align: center;
+  color: #4CAF50;
+  margin: 1rem 0;
+  font-size: 1.1rem;
+`;
+
 const formatTime = (seconds: number): string => {
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;
@@ -127,7 +134,9 @@ const GameCompletionDialog: React.FC<GameCompletionDialogProps> = ({
   totalTime
 }) => {
   const [name, setName] = useState('');
+  const [isScoreSaved, setIsScoreSaved] = useState(false);
   const currentUser = userService.getUser();
+  const nextLevel = userService.getNextLevel(difficulty);
 
   useEffect(() => {
     if (currentUser?.name) {
@@ -142,7 +151,28 @@ const GameCompletionDialog: React.FC<GameCompletionDialogProps> = ({
       incorrectWords,
       totalTime
     });
+    setIsScoreSaved(true);
+  };
+
+  const handleNextLevel = () => {
+    if (!isScoreSaved) {
+      handleSubmit();
+    }
     onClose();
+  };
+
+  const getActionButtonText = () => {
+    if (difficulty === 'advanced') {
+      return 'Play Again';
+    }
+    return 'Next Level';
+  };
+
+  const getLevelMessage = () => {
+    if (difficulty === 'advanced') {
+      return 'Congratulations! You\'ve completed all levels!';
+    }
+    return `Great job! Ready for ${nextLevel} level?`;
   };
 
   return (
@@ -150,6 +180,7 @@ const GameCompletionDialog: React.FC<GameCompletionDialogProps> = ({
       <Overlay onClick={onClose} />
       <Dialog>
         <Title>Level Complete!</Title>
+        <Message>{getLevelMessage()}</Message>
         <Stats>
           <Stat>
             <span>Correct Words:</span>
@@ -164,7 +195,7 @@ const GameCompletionDialog: React.FC<GameCompletionDialogProps> = ({
             <span>{formatTime(totalTime)}</span>
           </Stat>
         </Stats>
-        {!currentUser?.name && (
+        {!currentUser?.name && !isScoreSaved && (
           <Input
             type="text"
             placeholder="Enter your name (optional)"
@@ -173,8 +204,12 @@ const GameCompletionDialog: React.FC<GameCompletionDialogProps> = ({
           />
         )}
         <ButtonGroup>
-          <PrimaryButton onClick={handleSubmit}>Save Score</PrimaryButton>
-          <SecondaryButton onClick={onRestart}>Play Again</SecondaryButton>
+          {!isScoreSaved && (
+            <PrimaryButton onClick={handleSubmit}>Save Score</PrimaryButton>
+          )}
+          <SecondaryButton onClick={handleNextLevel}>
+            {getActionButtonText()}
+          </SecondaryButton>
         </ButtonGroup>
       </Dialog>
     </>
