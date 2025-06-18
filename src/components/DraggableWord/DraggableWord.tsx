@@ -58,12 +58,37 @@ const DraggableWord: React.FC<DraggableWordProps> = ({
   // Detect mobile device
   React.useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+      return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    setIsMobile(checkMobile());
   }, []);
+
+  const createDragImage = (element: HTMLElement) => {
+    const dragImage = element.cloneNode(true) as HTMLElement;
+    
+    // Apply drag-specific styles
+    dragImage.style.position = 'absolute';
+    dragImage.style.top = '-1000px';
+    dragImage.style.left = '-1000px';
+    dragImage.style.opacity = '0.8';
+    dragImage.style.transform = 'rotate(5deg) scale(0.9)';
+    dragImage.style.pointerEvents = 'none';
+    dragImage.style.zIndex = '10000';
+    
+    // Ensure the drag image has the same styling
+    dragImage.style.background = isInUse ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.2)';
+    dragImage.style.border = `2px solid ${isInUse ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.4)'}`;
+    dragImage.style.borderRadius = '8px';
+    dragImage.style.padding = '12px 20px';
+    dragImage.style.margin = '8px';
+    dragImage.style.color = '#fff';
+    dragImage.style.fontSize = '1.1rem';
+    dragImage.style.fontWeight = '500';
+    dragImage.style.textShadow = '0 2px 4px rgba(0, 0, 0, 0.2)';
+    dragImage.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
+    
+    return dragImage;
+  };
 
   const handleDragStart = (e: React.DragEvent) => {
     if (isInUse || isDragging) return;
@@ -74,28 +99,7 @@ const DraggableWord: React.FC<DraggableWordProps> = ({
     
     // Create a custom drag image that shows the actual card
     if (cardRef.current) {
-      const dragImage = cardRef.current.cloneNode(true) as HTMLElement;
-      
-      // Apply drag-specific styles
-      dragImage.style.position = 'absolute';
-      dragImage.style.top = '-1000px';
-      dragImage.style.left = '-1000px';
-      dragImage.style.opacity = '0.8';
-      dragImage.style.transform = 'rotate(5deg) scale(0.9)';
-      dragImage.style.pointerEvents = 'none';
-      dragImage.style.zIndex = '10000';
-      
-      // Ensure the drag image has the same styling
-      dragImage.style.background = isInUse ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.2)';
-      dragImage.style.border = `2px solid ${isInUse ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.4)'}`;
-      dragImage.style.borderRadius = '8px';
-      dragImage.style.padding = '12px 20px';
-      dragImage.style.margin = '8px';
-      dragImage.style.color = '#fff';
-      dragImage.style.fontSize = '1.1rem';
-      dragImage.style.fontWeight = '500';
-      dragImage.style.textShadow = '0 2px 4px rgba(0, 0, 0, 0.2)';
-      dragImage.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
+      const dragImage = createDragImage(cardRef.current);
       
       // Add to document temporarily
       document.body.appendChild(dragImage);
@@ -123,69 +127,51 @@ const DraggableWord: React.FC<DraggableWordProps> = ({
   const handleTouchStart = (e: React.TouchEvent) => {
     if (isInUse || isDragging) return;
     
-    e.preventDefault();
     const touch = e.touches[0];
     setTouchStartPos({ x: touch.clientX, y: touch.clientY });
+    
+    // Prevent default to avoid any delay
+    e.preventDefault();
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (isInUse || isDragging) return;
+    if (isInUse || isDragging || !cardRef.current) return;
     
     const touch = e.touches[0];
     const deltaX = Math.abs(touch.clientX - touchStartPos.x);
     const deltaY = Math.abs(touch.clientY - touchStartPos.y);
     
-    // Start dragging if finger has moved more than 5px (to avoid accidental drags)
+    // Start dragging if finger has moved more than 5px
     if (deltaX > 5 || deltaY > 5) {
       setIsDragging(true);
       
-      // Create a drag event manually for mobile
-      if (cardRef.current) {
-        const dragEvent = new DragEvent('dragstart', {
-          bubbles: true,
-          cancelable: true,
-          dataTransfer: new DataTransfer()
-        });
-        
-        // Set the data
-        dragEvent.dataTransfer?.setData('text/plain', word);
-        dragEvent.dataTransfer!.effectAllowed = 'move';
-        
-        // Create drag image
-        const dragImage = cardRef.current.cloneNode(true) as HTMLElement;
-        dragImage.style.position = 'absolute';
-        dragImage.style.top = '-1000px';
-        dragImage.style.left = '-1000px';
-        dragImage.style.opacity = '0.8';
-        dragImage.style.transform = 'rotate(5deg) scale(0.9)';
-        dragImage.style.pointerEvents = 'none';
-        dragImage.style.zIndex = '10000';
-        dragImage.style.background = isInUse ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.2)';
-        dragImage.style.border = `2px solid ${isInUse ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.4)'}`;
-        dragImage.style.borderRadius = '8px';
-        dragImage.style.padding = '12px 20px';
-        dragImage.style.margin = '8px';
-        dragImage.style.color = '#fff';
-        dragImage.style.fontSize = '1.1rem';
-        dragImage.style.fontWeight = '500';
-        dragImage.style.textShadow = '0 2px 4px rgba(0, 0, 0, 0.2)';
-        dragImage.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
-        
-        document.body.appendChild(dragImage);
-        dragEvent.dataTransfer?.setDragImage(dragImage, 20, 20);
-        
-        // Dispatch the drag event
-        cardRef.current.dispatchEvent(dragEvent);
-        
-        // Clean up drag image
-        setTimeout(() => {
-          if (document.body.contains(dragImage)) {
-            document.body.removeChild(dragImage);
-          }
-        }, 0);
-        
-        onDragStart(index);
-      }
+      // Create and dispatch a drag event
+      const dragEvent = new DragEvent('dragstart', {
+        bubbles: true,
+        cancelable: true,
+        dataTransfer: new DataTransfer()
+      });
+      
+      // Set the data
+      dragEvent.dataTransfer?.setData('text/plain', word);
+      dragEvent.dataTransfer!.effectAllowed = 'move';
+      
+      // Create drag image
+      const dragImage = createDragImage(cardRef.current);
+      document.body.appendChild(dragImage);
+      dragEvent.dataTransfer!.setDragImage(dragImage, 20, 20);
+      
+      // Dispatch the drag event
+      cardRef.current.dispatchEvent(dragEvent);
+      
+      // Clean up drag image
+      setTimeout(() => {
+        if (document.body.contains(dragImage)) {
+          document.body.removeChild(dragImage);
+        }
+      }, 0);
+      
+      onDragStart(index);
     }
   };
 
@@ -199,7 +185,7 @@ const DraggableWord: React.FC<DraggableWordProps> = ({
   return (
     <WordCard
       ref={cardRef}
-      draggable={!isInUse && !isMobile} // Disable HTML5 drag on mobile, use touch events instead
+      draggable={!isInUse && !isMobile}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onTouchStart={handleTouchStart}
