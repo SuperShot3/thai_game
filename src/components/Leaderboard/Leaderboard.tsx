@@ -88,6 +88,28 @@ const EmptyState = styled.div`
   opacity: 0.7;
 `;
 
+const LoadingState = styled(EmptyState)`
+  color: #4a90e2;
+`;
+
+const ErrorState = styled(EmptyState)`
+  color: #e74c3c;
+`;
+
+const TestButton = styled.button`
+  margin: 1rem;
+  padding: 0.5rem 1rem;
+  background: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+
+  &:hover {
+    background: #357abd;
+  }
+`;
+
 const formatTime = (seconds: number): string => {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
@@ -101,43 +123,47 @@ const formatTime = (seconds: number): string => {
 
 const Leaderboard: React.FC = () => {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchLeaderboard = async () => {
+    try {
+      setLoading(true);
+      const leaderboardData = await userService.getLeaderboard();
+      setEntries(leaderboardData);
+      setError(null);
+    } catch (err) {
+      setError('Failed to load leaderboard');
+      console.error('Error fetching leaderboard:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTestClick = async () => {
+    try {
+      await userService.testAddEntry();
+      await fetchLeaderboard();
+    } catch (err) {
+      console.error('Error in test:', err);
+    }
+  };
 
   useEffect(() => {
-    const allEntries = userService.getLeaderboard();
-    
-    // Clean up duplicate guest entries by keeping only the best score for each guest
-    const uniqueEntries = allEntries.reduce((acc: LeaderboardEntry[], current) => {
-      const existingEntry = acc.find(entry => 
-        entry.name === current.name && 
-        entry.correctWords === current.correctWords
-      );
-      
-      if (!existingEntry) {
-        acc.push(current);
-      } else if (current.totalTime < existingEntry.totalTime) {
-        // Replace with better time if it exists
-        const index = acc.indexOf(existingEntry);
-        acc[index] = current;
-      }
-      
-      return acc;
-    }, []);
-
-    // Sort by correct words (descending) and then by time (ascending)
-    const sortedEntries = uniqueEntries.sort((a, b) => {
-      if (b.correctWords !== a.correctWords) {
-        return b.correctWords - a.correctWords;
-      }
-      return a.totalTime - b.totalTime;
-    });
-
-    setEntries(sortedEntries);
+    fetchLeaderboard();
+    const intervalId = setInterval(fetchLeaderboard, 30000);
+    return () => clearInterval(intervalId);
   }, []);
 
   return (
     <Container>
       <Title>Leaderboard</Title>
-      {entries.length === 0 ? (
+      <TestButton onClick={handleTestClick}>Add Test Entry</TestButton>
+      {loading ? (
+        <LoadingState>Loading leaderboard...</LoadingState>
+      ) : error ? (
+        <ErrorState>{error}</ErrorState>
+      ) : entries.length === 0 ? (
         <EmptyState>No entries yet. Be the first to complete a level!</EmptyState>
       ) : (
         <Table>

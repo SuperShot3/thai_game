@@ -1,5 +1,6 @@
 import { Difficulty } from '../types';
 import { LeaderboardEntry } from '../types/leaderboard';
+import { supabase } from './supabaseService';
 
 type ProgressData = {
   totalTime: number;
@@ -49,15 +50,30 @@ class UserService {
     }
   }
 
-  private loadLeaderboard(): void {
-    const savedLeaderboard = localStorage.getItem('leaderboard');
-    if (savedLeaderboard) {
-      this.leaderboard = JSON.parse(savedLeaderboard);
-    }
-  }
+  private async loadLeaderboard(): Promise<void> {
+    try {
+      console.log('Attempting to fetch leaderboard from Supabase...');
+      const { data, error } = await supabase
+        .from('leaderboard')
+        .select('*')
+        .order('correct', { ascending: false })
+        .order('time', { ascending: true });
 
-  private saveLeaderboard(): void {
-    localStorage.setItem('leaderboard', JSON.stringify(this.leaderboard));
+      if (error) {
+        console.error('Error loading leaderboard:', error);
+        return;
+      }
+
+      console.log('Leaderboard data received:', data);
+      this.leaderboard = data.map(entry => ({
+        name: entry.player_name,
+        correctWords: entry.correct,
+        incorrectWords: entry.incorrect,
+        totalTime: entry.time
+      }));
+    } catch (error) {
+      console.error('Error loading leaderboard:', error);
+    }
   }
 
   setUser(name: string, email: string): void {
@@ -140,18 +156,51 @@ class UserService {
     localStorage.removeItem(this.STORAGE_KEY);
   }
 
-  public addToLeaderboard(entry: Omit<LeaderboardEntry, 'name'> & { name?: string }): void {
+  public async addToLeaderboard(entry: Omit<LeaderboardEntry, 'name'> & { name?: string }): Promise<void> {
     const name = entry.name || `Guest ${this.generateGuestNumber()}`;
     
-    this.leaderboard = this.leaderboard.filter(e => e.name !== name);
-    
-    const newEntry: LeaderboardEntry = {
-      ...entry,
-      name
-    };
-    
-    this.leaderboard.push(newEntry);
-    this.saveLeaderboard();
+    try {
+      const { error } = await supabase
+        .from('leaderboard')
+        .insert([{
+          player_name: name,
+          correct: entry.correctWords,
+          incorrect: entry.incorrectWords,
+          time: entry.totalTime
+        }]);
+
+      if (error) {
+        console.error('Error adding to leaderboard:', error);
+        return;
+      }
+
+      await this.loadLeaderboard();
+    } catch (error) {
+      console.error('Error adding to leaderboard:', error);
+    }
+  }
+
+  public async getLeaderboard(): Promise<LeaderboardEntry[]> {
+    await this.loadLeaderboard();
+    return this.leaderboard;
+  }
+
+  public async clearLeaderboard(): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('leaderboard')
+        .delete()
+        .not('id', 'is', null);
+
+      if (error) {
+        console.error('Error clearing leaderboard:', error);
+        return;
+      }
+
+      this.leaderboard = [];
+    } catch (error) {
+      console.error('Error clearing leaderboard:', error);
+    }
   }
 
   private generateGuestNumber(): number {
@@ -166,13 +215,28 @@ class UserService {
     return Math.max(...numbers) + 1;
   }
 
-  public getLeaderboard(): LeaderboardEntry[] {
-    return this.leaderboard;
-  }
+  public async testAddEntry(): Promise<void> {
+    try {
+      console.log('Adding test entry to leaderboard...');
+      const { error } = await supabase
+        .from('leaderboard')
+        .insert([{
+          player_name: 'Test Player',
+          correct: 5,
+          incorrect: 1,
+          time: 120
+        }]);
 
-  public clearLeaderboard(): void {
-    this.leaderboard = [];
-    this.saveLeaderboard();
+      if (error) {
+        console.error('Error adding test entry:', error);
+        return;
+      }
+
+      console.log('Test entry added successfully');
+      await this.loadLeaderboard();
+    } catch (error) {
+      console.error('Error in test:', error);
+    }
   }
 }
 
