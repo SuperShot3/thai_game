@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import styled from 'styled-components';
 
 interface DraggableWordProps {
@@ -50,11 +50,53 @@ const DraggableWord: React.FC<DraggableWordProps> = ({
   onDragEnd,
   fontClass
 }) => {
+  const cardRef = useRef<HTMLDivElement>(null);
+
   const handleDragStart = (e: React.DragEvent) => {
     if (isInUse) return;
     
     e.dataTransfer.setData('text/plain', word);
     e.dataTransfer.effectAllowed = 'move';
+    
+    // Create a custom drag image that shows the actual card
+    if (cardRef.current) {
+      const dragImage = cardRef.current.cloneNode(true) as HTMLElement;
+      
+      // Apply drag-specific styles
+      dragImage.style.position = 'absolute';
+      dragImage.style.top = '-1000px';
+      dragImage.style.left = '-1000px';
+      dragImage.style.opacity = '0.8';
+      dragImage.style.transform = 'rotate(5deg) scale(0.9)';
+      dragImage.style.pointerEvents = 'none';
+      dragImage.style.zIndex = '10000';
+      
+      // Ensure the drag image has the same styling
+      dragImage.style.background = isInUse ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.2)';
+      dragImage.style.border = `2px solid ${isInUse ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.4)'}`;
+      dragImage.style.borderRadius = '8px';
+      dragImage.style.padding = '12px 20px';
+      dragImage.style.margin = '8px';
+      dragImage.style.color = '#fff';
+      dragImage.style.fontSize = '1.1rem';
+      dragImage.style.fontWeight = '500';
+      dragImage.style.textShadow = '0 2px 4px rgba(0, 0, 0, 0.2)';
+      dragImage.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
+      
+      // Add to document temporarily
+      document.body.appendChild(dragImage);
+      
+      // Set as drag image
+      e.dataTransfer.setDragImage(dragImage, 20, 20);
+      
+      // Remove from document after drag starts
+      setTimeout(() => {
+        if (document.body.contains(dragImage)) {
+          document.body.removeChild(dragImage);
+        }
+      }, 0);
+    }
+    
     onDragStart(index);
   };
 
@@ -64,6 +106,7 @@ const DraggableWord: React.FC<DraggableWordProps> = ({
 
   return (
     <WordCard
+      ref={cardRef}
       draggable={!isInUse}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
