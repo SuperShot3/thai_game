@@ -257,7 +257,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
   // Global drop handler
   useEffect(() => {
     if (!dragState?.isDragging) return;
-    const handlePointerUp = (e: PointerEvent) => {
+    const handleDropEvent = (e: Event) => {
       // Only handle if dragging
       if (!dragState?.isDragging) return;
       const activeZoneId = getActiveDropZone();
@@ -268,9 +268,11 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
         stopDrag();
       }
     };
-    document.addEventListener('pointerup', handlePointerUp, { passive: false });
+    document.addEventListener('pointerup', handleDropEvent, { passive: false });
+    document.addEventListener('touchend', handleDropEvent, { passive: false });
     return () => {
-      document.removeEventListener('pointerup', handlePointerUp);
+      document.removeEventListener('pointerup', handleDropEvent);
+      document.removeEventListener('touchend', handleDropEvent);
     };
   }, [dragState, getActiveDropZone, dropZones]);
 
