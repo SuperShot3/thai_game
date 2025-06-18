@@ -1,16 +1,13 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { DndProvider } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
-import { TouchBackend } from 'react-dnd-touch-backend';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import styled from 'styled-components';
-import { Difficulty, ThaiSentence } from '../../types';
 import { generateSentence } from '../../services/sentenceGenerator';
+import { userService } from '../../services/userService';
+import { Difficulty, ThaiSentence } from '../../types';
 import DraggableWord from '../DraggableWord/DraggableWord';
 import DroppableZone from '../DroppableZone/DroppableZone';
+import Dialog from '../Dialog/Dialog';
 import GameCompletionDialog from '../GameCompletionDialog/GameCompletionDialog';
 import '../../styles/fonts.css';
-import Dialog from '../Dialog/Dialog';
-import { userService } from '../../services/userService';
 
 const GameBoardContainer = styled.div`
   display: flex;
@@ -191,14 +188,12 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
   const [isCorrect, setIsCorrect] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   const [showHint, setShowHint] = useState(false);
   const [currentFont, setCurrentFont] = useState('font-1');
   const [currentHintIndex, setCurrentHintIndex] = useState(0);
   const [correctWords, setCorrectWords] = useState(0);
   const [incorrectWords, setIncorrectWords] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
   const startTimeRef = useRef(Date.now());
 
   const getRandomFont = () => {
@@ -259,18 +254,20 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     }
   }, [isComplete, isCorrect, difficulty, generateNewSentence]);
 
-  const handleDragStart = (index: number) => {
-    setIsDragging(true);
-  };
-
-  const handleDragEnd = () => {
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>, position: number) => {
+  const handleDrop = (e: React.DragEvent<HTMLDivElement> | { word: string }, position: number) => {
     if (isComplete) return;
 
-    const word = e.dataTransfer.getData('text/plain');
+    let word: string;
+    
+    // Handle both traditional drag events and pointer-based drops
+    if ('dataTransfer' in e) {
+      // Traditional drag event
+      word = e.dataTransfer.getData('text/plain');
+    } else {
+      // Pointer-based drop
+      word = e.word;
+    }
+    
     if (!word) return;
 
     const newUserAnswer = [...userAnswer];
@@ -385,104 +382,92 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     window.location.href = '/';
   };
 
-  const backendOptions = {
-    enableMouseEvents: true,
-    enableTouchEvents: true,
-    delayTouchStart: 0, // Reduce touch delay to 0
-    delay: 0, // Reduce drag delay to 0
-    touchSlop: 0, // Reduce touch slop to 0
-  };
-
   if (!currentSentence) return null;
 
   return (
-    <DndProvider backend={isMobile ? TouchBackend : HTML5Backend} options={backendOptions}>
-      <GameBoardContainer>
-        <SentenceContainer>
-          <EnglishText>
-            {showHint 
-              ? currentSentence.hints[currentHintIndex]
-              : 'Click hint to see word hints'}
-          </EnglishText>
-          <div style={{ display: 'flex', gap: '10px' }}>
-          <HintButton onClick={toggleHint}>
-            {showHint ? 'Hide Hint' : 'Show Hint'}
-          </HintButton>
-            {showHint && currentSentence.hints.length > 1 && (
-              <HintButton onClick={showNextHint}>
-                Next Hint
-              </HintButton>
-            )}
-          </div>
-        </SentenceContainer>
-        
-        <AnswerContainer>
-          {currentSentence.thaiWords.map((_: string, index: number) => (
-            <DroppableZone
-              key={index}
-              onDrop={(e) => handleDrop(e, index)}
-              onWordRemove={() => handleWordRemove(index)}
-              word={userAnswer[index]}
-              isComplete={isComplete}
-              isCorrect={isCorrect}
-            >
-              <span className={currentFont}>{userAnswer[index] || ''}</span>
-            </DroppableZone>
-          ))}
-        </AnswerContainer>
-
-        <WordContainer>
-          {shuffledWords.map((wordState, index) => (
-            <DraggableWord
-              key={`${wordState.word}-${index}`}
-              word={wordState.word}
-              index={index}
-              isInUse={wordState.isInUse}
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd}
-              fontClass={currentFont}
-            />
-          ))}
-        </WordContainer>
-
-        <ButtonContainer>
-          <Button 
-            variant="primary" 
-            onClick={checkAnswer}
-            disabled={isComplete || userAnswer.some(word => !word)}
+    <GameBoardContainer>
+      <SentenceContainer>
+        <EnglishText>
+          {showHint 
+            ? currentSentence.hints[currentHintIndex]
+            : 'Click hint to see word hints'}
+        </EnglishText>
+        <div style={{ display: 'flex', gap: '10px' }}>
+        <HintButton onClick={toggleHint}>
+          {showHint ? 'Hide Hint' : 'Show Hint'}
+        </HintButton>
+          {showHint && currentSentence.hints.length > 1 && (
+            <HintButton onClick={showNextHint}>
+              Next Hint
+            </HintButton>
+          )}
+        </div>
+      </SentenceContainer>
+      
+      <AnswerContainer>
+        {currentSentence.thaiWords.map((_: string, index: number) => (
+          <DroppableZone
+            key={index}
+            onDrop={(e: React.DragEvent<HTMLDivElement> | { word: string }) => handleDrop(e, index)}
+            onWordRemove={() => handleWordRemove(index)}
+            word={userAnswer[index]}
+            isComplete={isComplete}
+            isCorrect={isCorrect}
           >
-            Check Answer
-          </Button>
-          <Button 
-            variant="secondary" 
-            onClick={handleClear}
-            disabled={isComplete || !userAnswer.some(word => word)}
-          >
-            Clear
-          </Button>
-        </ButtonContainer>
+            <span className={currentFont}>{userAnswer[index] || ''}</span>
+          </DroppableZone>
+        ))}
+      </AnswerContainer>
 
-        {showDialog && (
-          <Dialog
-            message="Try again! Your answer is incorrect."
-            type="error"
-            onClose={handleTryAgain}
+      <WordContainer>
+        {shuffledWords.map((wordState, index) => (
+          <DraggableWord
+            key={`${wordState.word}-${index}`}
+            word={wordState.word}
+            index={index}
+            isInUse={wordState.isInUse}
+            fontClass={currentFont}
           />
-        )}
+        ))}
+      </WordContainer>
 
-        {showCompletionDialog && (
-          <GameCompletionDialog
-            onClose={handleClose}
-            onRestart={handleRestart}
-            score={correctWords * 10}
-            correctWords={correctWords}
-            incorrectWords={incorrectWords}
-            difficulty={difficulty}
-            totalTime={elapsedTime}
-          />
-        )}
-      </GameBoardContainer>
-    </DndProvider>
+      <ButtonContainer>
+        <Button 
+          variant="primary" 
+          onClick={checkAnswer}
+          disabled={isComplete || userAnswer.some(word => !word)}
+        >
+          Check Answer
+        </Button>
+        <Button 
+          variant="secondary" 
+          onClick={handleClear}
+          disabled={isComplete || !userAnswer.some(word => word)}
+        >
+          Clear
+        </Button>
+      </ButtonContainer>
+
+      {showDialog && (
+        <Dialog
+          message="Try again! Your answer is incorrect."
+          type="error"
+          onClose={handleTryAgain}
+        />
+      )}
+
+      {showCompletionDialog && (
+        <GameCompletionDialog
+          onClose={handleClose}
+          onRestart={handleRestart}
+          score={correctWords * 10}
+          correctWords={correctWords}
+          incorrectWords={incorrectWords}
+          difficulty={difficulty}
+          totalTime={elapsedTime}
+        />
+      )}
+    </GameBoardContainer>
   );
 };
 

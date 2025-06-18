@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { userService } from '../../services/userService';
-import { Difficulty } from '../../types/game';
+import { Difficulty } from '../../types';
 
 interface GameCompletionDialogProps {
   onClose: () => void;

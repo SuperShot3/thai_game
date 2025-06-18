@@ -7,10 +7,6 @@ const usedSentences: { [key in Difficulty]: Set<string> } = {
   advanced: new Set()
 };
 
-export const resetUsedSentences = (difficulty: Difficulty) => {
-  usedSentences[difficulty].clear();
-};
-
 export const generateSentence = (difficulty: Difficulty): ThaiSentence => {
   const categoryKey = difficulty === 'beginner' ? 'simple_sentences' :
     difficulty === 'intermediate' ? 'intermediate_sentences' : 'advanced_sentences';
@@ -23,7 +19,7 @@ export const generateSentence = (difficulty: Difficulty): ThaiSentence => {
 
   // If all sentences have been used, reset the used sentences for this difficulty
   if (availableSentences.length === 0) {
-    resetUsedSentences(difficulty);
+    usedSentences[difficulty].clear();
     return generateSentence(difficulty);
   }
 

@@ -1,16 +1,14 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import styled from 'styled-components';
 
 interface DraggableWordProps {
   word: string;
   index: number;
   isInUse: boolean;
-  onDragStart: (index: number) => void;
-  onDragEnd: () => void;
   fontClass: string;
 }
 
-const WordCard = styled.div<{ isInUse: boolean }>`
+const WordCard = styled.div<{ isInUse: boolean; isDragging: boolean }>`
   background: ${({ isInUse }) => isInUse ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.2)'};
   border: 2px solid ${({ isInUse }) => isInUse ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.4)'};
   border-radius: 8px;
@@ -19,9 +17,11 @@ const WordCard = styled.div<{ isInUse: boolean }>`
   cursor: grab;
   user-select: none;
   transition: transform 0.1s ease, background 0.1s ease, border-color 0.1s ease;
-  opacity: ${({ isInUse }) => isInUse ? 0.5 : 1};
+  opacity: ${({ isInUse, isDragging }) => isInUse ? 0.5 : isDragging ? 0.8 : 1};
   will-change: transform;
   touch-action: none;
+  position: relative;
+  z-index: ${({ isDragging }) => isDragging ? 1000 : 1};
 
   &:hover {
     background: ${({ isInUse }) => isInUse ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.25)'};
@@ -42,125 +42,132 @@ const WordText = styled.span`
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 `;
 
+const DragPreview = styled.div<{ isVisible: boolean; x: number; y: number }>`
+  position: fixed;
+  top: ${({ y }) => y}px;
+  left: ${({ x }) => x}px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-radius: 8px;
+  padding: 12px 20px;
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 500;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  z-index: 10000;
+  opacity: ${({ isVisible }) => isVisible ? 0.8 : 0};
+  transform: rotate(5deg) scale(0.9);
+  transition: opacity 0.1s ease;
+`;
+
 const DraggableWord: React.FC<DraggableWordProps> = ({
   word,
   index,
   isInUse,
-  onDragStart,
-  onDragEnd,
   fontClass
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [dragStartPos, setDragStartPos] = useState({ x: 0, y: 0 });
+  const [currentPos, setCurrentPos] = useState({ x: 0, y: 0 });
+  const [isPointerDown, setIsPointerDown] = useState(false);
 
-  const createDragImage = (element: HTMLElement) => {
-    const dragImage = element.cloneNode(true) as HTMLElement;
+  // Handle pointer events for cross-platform drag support
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (isInUse) return;
     
-    // Apply drag-specific styles
-    dragImage.style.position = 'absolute';
-    dragImage.style.top = '-1000px';
-    dragImage.style.left = '-1000px';
-    dragImage.style.opacity = '0.8';
-    dragImage.style.transform = 'rotate(5deg) scale(0.9)';
-    dragImage.style.pointerEvents = 'none';
-    dragImage.style.zIndex = '10000';
+    e.preventDefault();
+    setIsPointerDown(true);
+    setDragStartPos({ x: e.clientX, y: e.clientY });
     
-    // Ensure the drag image has the same styling
-    dragImage.style.background = isInUse ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.2)';
-    dragImage.style.border = `2px solid ${isInUse ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.4)'}`;
-    dragImage.style.borderRadius = '8px';
-    dragImage.style.padding = '12px 20px';
-    dragImage.style.margin = '8px';
-    dragImage.style.color = '#fff';
-    dragImage.style.fontSize = '1.1rem';
-    dragImage.style.fontWeight = '500';
-    dragImage.style.textShadow = '0 2px 4px rgba(0, 0, 0, 0.2)';
-    dragImage.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
-    
-    return dragImage;
-  };
-
-  const handleDragStart = (e: React.DragEvent) => {
-    if (isInUse || isDragging) return;
-    
-    setIsDragging(true);
-    e.dataTransfer.setData('text/plain', word);
-    e.dataTransfer.effectAllowed = 'move';
-    
-    // Create a custom drag image that shows the actual card
+    // Set pointer capture for reliable tracking
     if (cardRef.current) {
-      const dragImage = createDragImage(cardRef.current);
-      
-      // Add to document temporarily
-      document.body.appendChild(dragImage);
-      
-      // Set as drag image
-      e.dataTransfer.setDragImage(dragImage, 20, 20);
-      
-      // Remove from document after drag starts
-      setTimeout(() => {
-        if (document.body.contains(dragImage)) {
-          document.body.removeChild(dragImage);
-        }
-      }, 0);
+      cardRef.current.setPointerCapture(e.pointerId);
     }
-    
-    onDragStart(index);
   };
 
-  const handleDragEnd = () => {
-    setIsDragging(false);
-    onDragEnd();
-  };
-
-  // Mobile touch handler for instant response
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (isInUse || isDragging) return;
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isPointerDown || isInUse) return;
     
-    // For mobile, we'll use a simple approach - just start dragging immediately
-    // This eliminates the delay while keeping it simple and reliable
-    if (cardRef.current) {
-      // Create a drag event immediately
-      const dragEvent = new DragEvent('dragstart', {
-        bubbles: true,
-        cancelable: true,
-        dataTransfer: new DataTransfer()
-      });
-      
-      dragEvent.dataTransfer?.setData('text/plain', word);
-      dragEvent.dataTransfer!.effectAllowed = 'move';
-      
-      // Create drag image
-      const dragImage = createDragImage(cardRef.current);
-      document.body.appendChild(dragImage);
-      dragEvent.dataTransfer!.setDragImage(dragImage, 20, 20);
-      
-      // Dispatch the drag event
-      cardRef.current.dispatchEvent(dragEvent);
-      
-      // Clean up drag image
-      setTimeout(() => {
-        if (document.body.contains(dragImage)) {
-          document.body.removeChild(dragImage);
-        }
-      }, 0);
-      
+    const deltaX = Math.abs(e.clientX - dragStartPos.x);
+    const deltaY = Math.abs(e.clientY - dragStartPos.y);
+    
+    // Start dragging if moved more than 5px
+    if (!isDragging && (deltaX > 5 || deltaY > 5)) {
       setIsDragging(true);
-      onDragStart(index);
+      setCurrentPos({ x: e.clientX, y: e.clientY });
+      
+      // Set global drag data
+      if (window) {
+        (window as any).__dragData = {
+          word,
+          index,
+          type: 'word'
+        };
+      }
+    }
+    
+    if (isDragging) {
+      setCurrentPos({ x: e.clientX, y: e.clientY });
     }
   };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!isPointerDown) return;
+    
+    setIsPointerDown(false);
+    
+    if (isDragging) {
+      setIsDragging(false);
+      
+      // Clear global drag data
+      if (window) {
+        (window as any).__dragData = null;
+      }
+    }
+    
+    // Release pointer capture
+    if (cardRef.current) {
+      cardRef.current.releasePointerCapture(e.pointerId);
+    }
+  };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (isDragging) {
+        // Clear global drag data
+        if (window) {
+          (window as any).__dragData = null;
+        }
+      }
+    };
+  }, [isDragging]);
 
   return (
-    <WordCard
-      ref={cardRef}
-      draggable={!isInUse}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-      onTouchStart={handleTouchStart}
-      isInUse={isInUse}
-    >
-      <WordText className={fontClass}>{word}</WordText>
-    </WordCard>
+    <>
+      <WordCard
+        ref={cardRef}
+        isInUse={isInUse}
+        isDragging={isDragging}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerUp}
+      >
+        <WordText className={fontClass}>{word}</WordText>
+      </WordCard>
+      
+      <DragPreview
+        isVisible={isDragging}
+        x={currentPos.x - 20}
+        y={currentPos.y - 20}
+      >
+        <span className={fontClass}>{word}</span>
+      </DragPreview>
+    </>
   );
 };
 

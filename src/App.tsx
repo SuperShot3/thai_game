@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import styled, { createGlobalStyle } from 'styled-components';
-import { DndProvider } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
 import GameBoard from './components/GameBoard/GameBoard';
 import { DifficultySelector } from './components/DifficultySelector/DifficultySelector';
 import AdManager from './components/Ads/AdManager';
@@ -392,7 +390,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <DndProvider backend={HTML5Backend}>
+    <>
       <GlobalStyle />
       <AppContainer>
         <Title>Thai Sentence Builder</Title>
@@ -417,7 +415,7 @@ const App: React.FC = () => {
           />
         )}
       </AppContainer>
-    </DndProvider>
+    </>
   );
 };
 

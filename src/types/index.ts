@@ -20,35 +20,4 @@ export interface GameState {
     message: string;
     correctAnswer?: string;
   };
-}
-
-export interface WordCardProps {
-  word: string;
-  index: number;
-  isDragging: boolean;
-  onDragStart: () => void;
-  onDragEnd: () => void;
-}
-
-export interface DropZoneProps {
-  position: number;
-  onDrop: (word: string) => void;
-  isOccupied: boolean;
-}
-
-export interface GameBoardProps {
-  difficulty: Difficulty;
-  onGameComplete: (isCorrect: boolean, correctWords: number) => void;
-}
-
-export interface DifficultyProgress {
-  easy: number;
-  beginner: number;
-  intermediate: number;
-  advanced: number;
-}
-
-export interface DifficultySelectorProps {
-  currentDifficulty: Difficulty;
-  progress: DifficultyProgress;
 } 
