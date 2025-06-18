@@ -295,42 +295,17 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     // Mark word as used
     setUsedWords(prev => new Set([...Array.from(prev), word]));
 
-    // Check if sentence is complete
-    const isComplete = newUserAnswer.every(word => word !== '');
-    if (isComplete) {
-      const isCorrect = newUserAnswer.every((word, index) => word === currentSentence?.thaiWords[index]);
-      setIsCorrect(isCorrect);
-      setIsComplete(true);
-
-      if (isCorrect) {
-        setCorrectWords(prev => prev + 1);
-        const updatedProgress = userService.updateProgress(difficulty, true);
-        if (updatedProgress) {
-          // Check if level is complete
-          if (userService.isLevelComplete(difficulty)) {
-            // Only show completion dialog if this is the final level (advanced)
-            if (difficulty === 'advanced') {
-              setShowCompletionDialog(true);
-            }
-          }
-          // Always call onLevelComplete to handle progression
-          onLevelComplete(difficulty);
-        }
-      } else {
-        setIncorrectWords(prev => prev + 1);
-        userService.updateProgress(difficulty, false);
-        // Only show dialog for incorrect answers
-        setShowDialog(true);
-      }
-    }
-
+    // Do NOT check correctness or conclude round here
     stopDrag();
   };
 
   const checkAnswer = () => {
     if (!currentSentence) return;
 
-    const isAnswerCorrect = userAnswer.join('') === currentSentence.thai.join('');
+    // Only check if all slots are filled
+    if (userAnswer.some(word => !word)) return;
+
+    const isAnswerCorrect = userAnswer.every((word, index) => word === currentSentence.thaiWords[index]);
     setIsCorrect(isAnswerCorrect);
     setIsComplete(true);
 
