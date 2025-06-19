@@ -587,16 +587,25 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
 
   return (
     <GameBoardContainer>
-      <DifficultyIndicator>
-        Level: {difficulty}
-      </DifficultyIndicator>
-      
-      <SentenceCounter style={{ color: getSentenceCounterColor() }}>
-        {getSentenceCounterText()}
-        <ProgressBar>
-          <ProgressFill progress={(correctWords / 5) * 100} />
-        </ProgressBar>
-      </SentenceCounter>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        width: '100%',
+        marginBottom: '1rem',
+        gap: '1rem'
+      }}>
+        <DifficultyIndicator>
+          Level: {difficulty}
+        </DifficultyIndicator>
+        
+        <SentenceCounter style={{ color: getSentenceCounterColor() }}>
+          {getSentenceCounterText()}
+          <ProgressBar>
+            <ProgressFill progress={(correctWords / 5) * 100} />
+          </ProgressBar>
+        </SentenceCounter>
+      </div>
       
       <StatsDisplay>
         <StatItem>
