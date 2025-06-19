@@ -5,6 +5,7 @@ import './DroppableZone.css';
 interface DroppableZoneProps {
   position: number;
   onDrop: (word: string, position: number) => void;
+  onRemove?: (word: string, position: number) => void;
   isFilled: boolean;
   filledWord?: string;
   fontClass?: string;
@@ -13,6 +14,7 @@ interface DroppableZoneProps {
 const DroppableZone: React.FC<DroppableZoneProps> = ({ 
   position, 
   onDrop, 
+  onRemove,
   isFilled, 
   filledWord, 
   fontClass 
@@ -71,6 +73,14 @@ const DroppableZone: React.FC<DroppableZoneProps> = ({
     e.stopPropagation();
   };
 
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isFilled && filledWord && onRemove) {
+      onRemove(filledWord, position);
+    }
+  };
+
   return (
     <div
       ref={zoneRef}
@@ -78,6 +88,7 @@ const DroppableZone: React.FC<DroppableZoneProps> = ({
       onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}
       onPointerMove={updateDropZoneRect}
+      onDoubleClick={handleDoubleClick}
       data-position={position}
       style={{
         touchAction: 'none',

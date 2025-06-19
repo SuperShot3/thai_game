@@ -21,6 +21,12 @@
 .droppable-zone.filled {
   border-color: rgba(255, 255, 255, 0.5);
   background: rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+}
+
+.droppable-zone.filled:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.02);
 }
 
 .droppable-zone.drag-over {
@@ -34,6 +40,7 @@
   color: rgba(255, 255, 255, 0.9);
   font-size: 1.1rem;
   transition: color 0.1s ease;
+  position: relative;
 }
 
 /* Disable hover effects on mobile/touch devices */

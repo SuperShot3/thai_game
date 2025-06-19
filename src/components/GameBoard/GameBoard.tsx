@@ -344,6 +344,20 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     stopDrag();
   }, [usedWords, userAnswer, stopDrag]);
 
+  const handleRemove = useCallback((word: string, position: number) => {
+    if (!isComplete) {
+      // Remove the word from userAnswer
+      const newUserAnswer = [...userAnswer];
+      newUserAnswer[position] = '';
+      setUserAnswer(newUserAnswer);
+      
+      // Remove the word from usedWords
+      const newUsedWords = new Set(Array.from(usedWords));
+      newUsedWords.delete(word);
+      setUsedWords(newUsedWords);
+    }
+  }, [userAnswer, usedWords, isComplete]);
+
   // Global drop handler
   useEffect(() => {
     if (!dragState?.isDragging) return;
@@ -635,6 +649,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
             key={index}
             position={index}
             onDrop={handleDrop}
+            onRemove={handleRemove}
             isFilled={userAnswer[index] !== ''}
             filledWord={userAnswer[index]}
             fontClass={currentFont}
