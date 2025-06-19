@@ -80,37 +80,78 @@ class UserService {
   }
 
   public getProgress(difficulty: Difficulty): ProgressData | null {
-    const key = `progress_${difficulty}`;
-    const storedProgress = localStorage.getItem(key);
-    if (storedProgress) {
-      try {
-        const progress = JSON.parse(storedProgress);
-        // Validate and normalize progress data
-        return {
-          totalTime: Math.max(0, Number(progress.totalTime) || 0),
-          timestamp: Number(progress.timestamp) || Date.now(),
-          correctWords: Math.max(0, Math.min(5, Number(progress.correctWords) || 0)),
-          incorrectWords: Math.max(0, Number(progress.incorrectWords) || 0)
-        };
-      } catch (error) {
-        console.error('Error parsing stored progress:', error);
+    try {
+      const key = `progress_${difficulty}`;
+      
+      // Check if localStorage is available
+      if (typeof window === 'undefined' || !window.localStorage) {
+        console.warn('localStorage not available');
         return null;
       }
+      
+      const storedProgress = localStorage.getItem(key);
+      if (storedProgress) {
+        try {
+          const progress = JSON.parse(storedProgress);
+          // Validate and normalize progress data
+          return {
+            totalTime: Math.max(0, Number(progress.totalTime) || 0),
+            timestamp: Number(progress.timestamp) || Date.now(),
+            correctWords: Math.max(0, Math.min(5, Number(progress.correctWords) || 0)),
+            incorrectWords: Math.max(0, Number(progress.incorrectWords) || 0)
+          };
+        } catch (parseError) {
+          console.error('Error parsing stored progress:', parseError);
+          // Clear corrupted data
+          localStorage.removeItem(key);
+          return null;
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting progress:', error);
+      return null;
     }
-    return null;
   }
 
   public updateProgress(difficulty: Difficulty, data: ProgressData): void {
-    // Validate and normalize data before saving
-    const normalizedData = {
-      totalTime: Math.max(0, Number(data.totalTime) || 0),
-      timestamp: Number(data.timestamp) || Date.now(),
-      correctWords: Math.max(0, Math.min(5, Number(data.correctWords) || 0)),
-      incorrectWords: Math.max(0, Number(data.incorrectWords) || 0)
-    };
+    try {
+      // Validate and normalize data before saving
+      const normalizedData = {
+        totalTime: Math.max(0, Number(data.totalTime) || 0),
+        timestamp: Number(data.timestamp) || Date.now(),
+        correctWords: Math.max(0, Math.min(5, Number(data.correctWords) || 0)),
+        incorrectWords: Math.max(0, Number(data.incorrectWords) || 0)
+      };
 
-    const key = `progress_${difficulty}`;
-    localStorage.setItem(key, JSON.stringify(normalizedData));
+      const key = `progress_${difficulty}`;
+      
+      // Check if localStorage is available (important for mobile)
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.setItem(key, JSON.stringify(normalizedData));
+      } else {
+        console.warn('localStorage not available, progress not saved');
+      }
+    } catch (error) {
+      console.error('Error updating progress:', error);
+      // Try again with a delay for mobile devices
+      setTimeout(() => {
+        try {
+          const normalizedData = {
+            totalTime: Math.max(0, Number(data.totalTime) || 0),
+            timestamp: Number(data.timestamp) || Date.now(),
+            correctWords: Math.max(0, Math.min(5, Number(data.correctWords) || 0)),
+            incorrectWords: Math.max(0, Number(data.incorrectWords) || 0)
+          };
+          const key = `progress_${difficulty}`;
+          if (typeof window !== 'undefined' && window.localStorage) {
+            localStorage.setItem(key, JSON.stringify(normalizedData));
+          }
+        } catch (retryError) {
+          console.error('Retry failed:', retryError);
+        }
+      }, 100);
+    }
   }
 
   public clearProgress(difficulty: Difficulty): void {

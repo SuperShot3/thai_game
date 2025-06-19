@@ -37,7 +37,12 @@ const DraggableWord: React.FC<DraggableWordProps> = ({
       onDragStart?.();
       
       // Set pointer capture for better touch handling
-      wordRef.current.setPointerCapture(e.pointerId);
+      try {
+        wordRef.current.setPointerCapture(e.pointerId);
+      } catch (error) {
+        console.warn('Pointer capture failed:', error);
+        // Continue without pointer capture
+      }
     }
   }, [word, fontClass, correctPosition, startDrag, onDragStart, isUsed]);
 
@@ -55,7 +60,11 @@ const DraggableWord: React.FC<DraggableWordProps> = ({
     e.stopPropagation();
     // Only release pointer capture, do not call stopDrag or onDragEnd
     if (isDraggingThis && wordRef.current) {
-      wordRef.current.releasePointerCapture(e.pointerId);
+      try {
+        wordRef.current.releasePointerCapture(e.pointerId);
+      } catch (error) {
+        console.warn('Pointer release failed:', error);
+      }
     }
   }, [isDraggingThis]);
 
@@ -64,7 +73,11 @@ const DraggableWord: React.FC<DraggableWordProps> = ({
     e.stopPropagation();
     // Only release pointer capture, do not call stopDrag or onDragEnd
     if (isDraggingThis && wordRef.current) {
-      wordRef.current.releasePointerCapture(e.pointerId);
+      try {
+        wordRef.current.releasePointerCapture(e.pointerId);
+      } catch (error) {
+        console.warn('Pointer release failed:', error);
+      }
     }
   }, [isDraggingThis]);
 

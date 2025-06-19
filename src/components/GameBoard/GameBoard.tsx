@@ -259,7 +259,11 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     
     setElapsedTime(0);
     startTimeRef.current = Date.now();
-    generateNewSentence();
+    
+    // Add a small delay for mobile to ensure state is properly set
+    setTimeout(() => {
+      generateNewSentence();
+    }, 50);
   }, [difficulty]);
 
   // Separate timer effect
@@ -364,15 +368,44 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     if (isAnswerCorrect) {
       const newCorrectWords = currentProgress.correctWords + 1;
       setCorrectWords(prev => prev + 1);
-      userService.updateProgress(difficulty, {
-        ...currentProgress,
-        correctWords: newCorrectWords,
-        timestamp: Date.now()
-      });
+      
+      // Update progress with better error handling for mobile
+      try {
+        userService.updateProgress(difficulty, {
+          ...currentProgress,
+          correctWords: newCorrectWords,
+          timestamp: Date.now()
+        });
+      } catch (error) {
+        console.error('Error updating progress:', error);
+        // Fallback: try to update progress again
+        setTimeout(() => {
+          try {
+            userService.updateProgress(difficulty, {
+              ...currentProgress,
+              correctWords: newCorrectWords,
+              timestamp: Date.now()
+            });
+          } catch (retryError) {
+            console.error('Retry failed:', retryError);
+          }
+        }, 100);
+      }
       
       // Show completion dialog only when reaching exactly 5 correct words
       if (newCorrectWords === 5) {
-        onLevelComplete(difficulty);
+        // Add a small delay for mobile to ensure state is updated
+        setTimeout(() => {
+          try {
+            onLevelComplete(difficulty);
+          } catch (error) {
+            console.error('Error calling onLevelComplete:', error);
+            // Fallback: try again
+            setTimeout(() => {
+              onLevelComplete(difficulty);
+            }, 100);
+          }
+        }, 50);
       } else {
         // Generate new sentence after a short delay for any correct answer
         setTimeout(() => {
@@ -383,11 +416,15 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
       }
     } else {
       setIncorrectWords(prev => prev + 1);
-      userService.updateProgress(difficulty, {
-        ...currentProgress,
-        incorrectWords: currentProgress.incorrectWords + 1,
-        timestamp: Date.now()
-      });
+      try {
+        userService.updateProgress(difficulty, {
+          ...currentProgress,
+          incorrectWords: currentProgress.incorrectWords + 1,
+          timestamp: Date.now()
+        });
+      } catch (error) {
+        console.error('Error updating incorrect progress:', error);
+      }
       setShowDialog(true);
     }
   };
