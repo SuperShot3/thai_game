@@ -575,7 +575,7 @@ const App: React.FC = () => {
       alert(errorMessage);
       
       // Offer to add a local test entry as fallback
-      const addLocal = confirm('Database error occurred. Would you like to add a local test entry instead?');
+      const addLocal = window.confirm('Database error occurred. Would you like to add a local test entry instead?');
       if (addLocal) {
         handleAddLocalTestEntry();
       }

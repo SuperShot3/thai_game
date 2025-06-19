@@ -6,7 +6,6 @@ import { leaderboardService } from '../Leaderboard/leaderboardService';
 import { Difficulty, ThaiSentence } from '../../types';
 import DraggableWord from '../DraggableWord/DraggableWord';
 import DroppableZone from '../DroppableZone/DroppableZone';
-import Dialog from '../Dialog/Dialog';
 import AIHelpAssistant from '../AIHelpAssistant/AIHelpAssistant';
 import '../../styles/fonts.css';
 import { useDragContext } from '../DraggableWord/DragContext';
@@ -175,110 +174,6 @@ const ButtonContainer = styled.div`
   box-sizing: border-box;
 `;
 
-const ExitButton = styled.button`
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  padding: 8px 16px;
-  border: none;
-  border-radius: 6px;
-  background: #e74c3c;
-  color: white;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  z-index: 1000;
-
-  &:hover {
-    background: #c0392b;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-  }
-
-  &:active {
-    transform: translateY(0);
-  }
-
-  &:disabled {
-    background: #95a5a6;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-`;
-
-const ExitConfirmDialog = styled.div`
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-  z-index: 10000;
-  max-width: 400px;
-  width: 90%;
-  text-align: center;
-  color: #333;
-  
-  h2 {
-    color: #333;
-    margin-bottom: 1rem;
-    font-size: 1.5rem;
-  }
-  
-  p {
-    color: #333;
-    margin-bottom: 1rem;
-    line-height: 1.5;
-  }
-`;
-
-const ExitConfirmOverlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 9999;
-  backdrop-filter: blur(4px);
-`;
-
-const ExitConfirmButtons = styled.div`
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-  margin-top: 1.5rem;
-`;
-
-const ExitConfirmButton = styled.button<{ variant: 'confirm' | 'cancel' }>`
-  padding: 10px 20px;
-  border: none;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  
-  ${({ variant }) => variant === 'confirm' ? `
-    background: #e74c3c;
-    color: white;
-    
-    &:hover {
-      background: #c0392b;
-    }
-  ` : `
-    background: #95a5a6;
-    color: white;
-    
-    &:hover {
-      background: #7f8c8d;
-    }
-  `}
-`;
-
 const Button = styled.button<{ variant?: 'primary' | 'secondary' | 'danger' }>`
   padding: 12px 24px;
   border: none;
@@ -422,38 +317,23 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     setHelpClickedThisRound(false); // Reset help state for new sentence
   }, [difficulty]);
 
-  // Reset all state when difficulty changes
+  // Generate new sentence when difficulty changes
   useEffect(() => {
     console.log('Difficulty changed to:', difficulty);
-    
     setCurrentSentence(null);
-    setShuffledWords([]);
     setUserAnswer([]);
     setUsedWords(new Set());
     setIsComplete(false);
-    setShowDialog(false);
     setShowHint(false);
     setCurrentHintIndex(0);
-    setIsLevelCompleting(false);
-    
-    // Initialize progress from userService instead of resetting to 0
-    const currentProgress = userService.getProgress(difficulty);
-    console.log('Loading progress for difficulty:', difficulty, 'Progress:', currentProgress);
-    
-    setCorrectWords(currentProgress?.correctWords || 0);
-    setIncorrectWords(currentProgress?.incorrectWords || 0);
-    
-    // Load session statistics (persists across levels)
-    const sessionData = userService.getSessionStats();
-    setSessionStats(sessionData);
-    console.log('Session stats loaded:', sessionData);
+    setHelpClickedThisRound(false);
     
     setElapsedTime(0);
     startTimeRef.current = Date.now();
     
     // Generate new sentence immediately for better mobile performance
     generateNewSentence();
-  }, [difficulty]);
+  }, [difficulty, generateNewSentence]);
 
   // Ensure progress is synchronized on mount
   useEffect(() => {
@@ -464,7 +344,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
       setCorrectWords(currentProgress.correctWords);
       setIncorrectWords(currentProgress.incorrectWords);
     }
-  }, []); // Only run on mount
+  }, [difficulty]); // Add difficulty as dependency
 
   // FIX: Remove the progress update from the timer
   useEffect(() => {
@@ -476,7 +356,30 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [difficulty]);
+  }, []); // Remove difficulty dependency since it's not used in the effect
+
+  const handleDrop = useCallback((word: string, position: number) => {
+    // Check if the word is already used
+    if (usedWords.has(word)) {
+      return;
+    }
+
+    // Check if the position is already filled
+    if (userAnswer[position]) {
+      return;
+    }
+
+    // Place the word
+    const newUserAnswer = [...userAnswer];
+    newUserAnswer[position] = word;
+    setUserAnswer(newUserAnswer);
+    
+    // Mark word as used
+    setUsedWords(prev => new Set([...Array.from(prev), word]));
+
+    // Do NOT check correctness or conclude round here
+    stopDrag();
+  }, [usedWords, userAnswer, stopDrag]);
 
   // Global drop handler
   useEffect(() => {
@@ -498,30 +401,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
       document.removeEventListener('pointerup', handleDropEvent);
       document.removeEventListener('touchend', handleDropEvent);
     };
-  }, [dragState, getActiveDropZone, dropZones]);
-
-  const handleDrop = (word: string, position: number) => {
-    // Check if the word is already used
-    if (usedWords.has(word)) {
-      return;
-    }
-
-    // Check if the position is already filled
-    if (userAnswer[position]) {
-      return;
-    }
-
-    // Place the word
-    const newUserAnswer = [...userAnswer];
-    newUserAnswer[position] = word;
-    setUserAnswer(newUserAnswer);
-    
-    // Mark word as used
-    setUsedWords(prev => new Set([...Array.from(prev), word]));
-
-    // Do NOT check correctness or conclude round here
-    stopDrag();
-  };
+  }, [dragState, getActiveDropZone, dropZones, handleDrop, stopDrag]);
 
   const checkAnswer = () => {
     if (!currentSentence) return false;
