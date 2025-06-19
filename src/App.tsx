@@ -337,12 +337,17 @@ const App: React.FC = () => {
       // Check if this is an exit (not a level completion)
       const isExit = finalCorrectWords < 5;
       
+      console.log('🔍 Exit detection:', { isExit, finalCorrectWords, threshold: 5 });
+      
       if (isExit) {
         console.log('🚪 User exited during gameplay');
+        console.log('🔄 Resetting to main screen...');
         
         // For exit, return to main screen with entrance form
         setDifficulty('beginner'); // Reset to beginner for next game
         setShowUserForm(true); // Show the entrance form
+        
+        console.log('✅ Exit handled - user form should be visible');
         return;
       }
       
@@ -624,6 +629,7 @@ const App: React.FC = () => {
   };
 
   if (showUserForm) {
+    console.log('📋 Rendering User Form - showUserForm is true');
     return (
       <>
         <GlobalStyle />
@@ -749,6 +755,7 @@ const App: React.FC = () => {
         <GlobalStyle />
         <AppContainer>
           <Title>Thai Sentence Builder</Title>
+          {console.log('🎮 Rendering Game Board - showUserForm is false')}
           
           {/* Development Mode Indicator */}
           {isDevelopmentMode && (

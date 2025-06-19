@@ -6,7 +6,6 @@ import { leaderboardService } from '../Leaderboard/leaderboardService';
 import { Difficulty, ThaiSentence } from '../../types';
 import DraggableWord from '../DraggableWord/DraggableWord';
 import DroppableZone from '../DroppableZone/DroppableZone';
-import AIHelpAssistant from '../AIHelpAssistant/AIHelpAssistant';
 import '../../styles/fonts.css';
 import { useDragContext } from '../DraggableWord/DragContext';
 import './GameBoard.css';
@@ -245,7 +244,6 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
   const [isExiting, setIsExiting] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [isLevelCompleting, setIsLevelCompleting] = useState(false);
-  const [helpClickedThisRound, setHelpClickedThisRound] = useState(false);
   const [sessionStats, setSessionStats] = useState({
     totalCorrectWords: 0,
     totalIncorrectWords: 0,
@@ -253,6 +251,19 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
   });
   const startTimeRef = useRef(Date.now());
   const { stopDrag, dragState, getActiveDropZone, dropZones } = useDragContext();
+
+  // Auto-reset isExiting state to prevent getting stuck
+  useEffect(() => {
+    if (isExiting) {
+      const timeout = setTimeout(() => {
+        console.log('⏰ Auto-resetting isExiting state to prevent getting stuck');
+        setIsExiting(false);
+        setShowExitConfirm(false);
+      }, 3000); // 3 second timeout
+
+      return () => clearTimeout(timeout);
+    }
+  }, [isExiting]);
 
   const getRandomFont = () => {
     const fonts = [
@@ -280,7 +291,6 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     setUsedWords(new Set()); // Reset used words for new sentence
     setIsComplete(false);
     setShowDialog(false);
-    setHelpClickedThisRound(false); // Reset help state for new sentence
   }, [difficulty]);
 
   // Generate new sentence when difficulty changes
@@ -504,18 +514,27 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  const handleHelpClick = () => {
-    setHelpClickedThisRound(true);
-  };
-
   const handleExitClick = () => {
-    if (isExiting || showExitConfirm) return; // Prevent multiple clicks
+    console.log('🚪 Exit button clicked');
+    if (isExiting || showExitConfirm) {
+      console.log('🚫 Exit already in progress or dialog already shown');
+      return; // Prevent multiple clicks
+    }
+    console.log('📋 Showing exit confirmation dialog');
     setShowExitConfirm(true);
   };
 
   const handleExitConfirm = async () => {
+    console.log('🚪 Exit confirmed - starting exit process');
     setIsExiting(true);
     setShowExitConfirm(false);
+
+    // Add a timeout to ensure states are reset even if there's an error
+    const resetTimeout = setTimeout(() => {
+      console.log('⏰ Exit timeout - forcing state reset');
+      setIsExiting(false);
+      setShowExitConfirm(false);
+    }, 5000); // 5 second timeout
 
     try {
       // Calculate current session stats for leaderboard save
@@ -530,6 +549,8 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
         console.error('No user found for exit save');
         return;
       }
+
+      console.log('👤 Current user:', currentUser.name);
 
       // Don't save scores for Guest users
       if (currentUser.name === 'Guest') {
@@ -554,6 +575,13 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
       // Update session stats before exiting
       userService.updateSessionStats(correctWords, incorrectWords, currentTime);
 
+      console.log('📊 Calling onLevelComplete with exit stats:', {
+        difficulty,
+        correctWords,
+        incorrectWords,
+        elapsedTime: currentTime
+      });
+
       // IMPORTANT: Send only current level stats for exit detection
       // This ensures the system knows it's an exit, not a level completion
       onLevelComplete(difficulty, {
@@ -561,6 +589,8 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
         incorrectWords: incorrectWords, // Only current level incorrect words
         elapsedTime: currentTime // Only current level time
       });
+
+      console.log('✅ Exit process completed successfully');
 
     } catch (error) {
       console.error('❌ Error saving exit stats:', error);
@@ -570,10 +600,17 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
         incorrectWords: incorrectWords,
         elapsedTime: Math.floor((Date.now() - startTimeRef.current) / 1000)
       });
+    } finally {
+      // Always reset the exiting state
+      console.log('🔄 Resetting exit states');
+      clearTimeout(resetTimeout); // Clear the timeout since we're resetting manually
+      setIsExiting(false);
+      setShowExitConfirm(false);
     }
   };
 
   const handleExitCancel = () => {
+    console.log('❌ Exit cancelled');
     setShowExitConfirm(false);
   };
 
@@ -713,15 +750,6 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
           {isExiting ? 'Exiting...' : 'Exit'}
         </Button>
       </ButtonContainer>
-
-      {/* AI Help Assistant */}
-      <AIHelpAssistant
-        targetSentence={currentSentence.thaiWords}
-        userAnswer={userAnswer}
-        availableWords={shuffledWords}
-        helpClickedThisRound={helpClickedThisRound}
-        onHelpClick={handleHelpClick}
-      />
 
       {/* Exit Confirmation Dialog */}
       {showExitConfirm && (
