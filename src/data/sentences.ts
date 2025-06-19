@@ -1,5 +1,4 @@
 import { Difficulty } from '../types';
-
 interface SentenceData {
   [key: string]: {
     description: string;
