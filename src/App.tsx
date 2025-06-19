@@ -204,18 +204,55 @@ const App: React.FC = () => {
   const [dialogButtonText, setDialogButtonText] = useState('Close');
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [isChangingLevel, setIsChangingLevel] = useState(false);
+  const [isDevelopmentMode, setIsDevelopmentMode] = useState(false);
 
-  // Add effect to recalculate progress when showing dialog
+  // DEVELOPMENT MODE: Clear leaderboard AND player progress on app start
   useEffect(() => {
-    if (showDialog) {
-      calculateProgress();
-    }
-  }, [showDialog]);
+    const initializeDevelopmentMode = async () => {
+      try {
+        // Check if we're in development mode
+        const isDevelopment = process.env.NODE_ENV === 'development' || 
+                             window.location.hostname === 'localhost' ||
+                             window.location.hostname === '127.0.0.1' ||
+                             window.location.hostname.includes('localhost');
+        
+        setIsDevelopmentMode(isDevelopment);
+        
+        if (isDevelopment) {
+          console.log('🧹 DEVELOPMENT MODE DETECTED');
+          console.log('🧹 Clearing leaderboard on app start...');
+          await leaderboardService.clearEntries();
+          console.log('✅ Leaderboard cleared for development');
+          
+          console.log('🧹 Clearing player progress on app start...');
+          userService.clearAllProgress();
+          userService.clearUser();
+          console.log('✅ Player progress cleared for development');
+          
+          // Reset local state to ensure clean start
+          setProgress({
+            beginner: 0,
+            intermediate: 0,
+            advanced: 0
+          });
+          setDifficulty('beginner');
+          setIsGameCompleted(false);
+          setShowUserForm(true);
+          
+          console.log('🔧 Development mode active - fresh start on each restart');
+        }
+      } catch (error) {
+        console.error('❌ Error in development mode initialization:', error);
+      }
+    };
 
-  // Add effect to recalculate progress when difficulty changes
+    initializeDevelopmentMode();
+  }, []); // Run only once when app starts
+
+  // Single source of truth for progress calculation
   useEffect(() => {
     calculateProgress();
-  }, [difficulty]);
+  }, [difficulty, showDialog]);
 
   // Initialize progress when app starts
   useEffect(() => {
@@ -243,6 +280,31 @@ const App: React.FC = () => {
   };
 
   const handleUserSubmit = (userData: { name: string }) => {
+    const currentUser = userService.getUser();
+    
+    // Check if this is a new player (different name or no previous user)
+    if (!currentUser || currentUser.name !== userData.name) {
+      console.log(`New player detected: ${userData.name}`);
+      
+      // Clear all previous progress for the new player
+      userService.clearAllProgress();
+      
+      // Reset game state
+      setDifficulty('beginner');
+      setProgress({
+        beginner: 0,
+        intermediate: 0,
+        advanced: 0
+      });
+      
+      console.log('Progress cleared for new player');
+    } else {
+      console.log(`Returning player: ${userData.name}`);
+      // For returning players, keep session stats but reset if they want a fresh start
+      // Session stats will persist across their play session
+    }
+    
+    // Set the new user (this will initialize session stats for new players)
     userService.setUser(userData.name);
     setShowUserForm(false);
   };
@@ -262,101 +324,134 @@ const App: React.FC = () => {
 
   const handleLevelComplete = (completedDifficulty: Difficulty, gameState?: { correctWords: number; incorrectWords: number; elapsedTime: number }) => {
     try {
+      console.log('=== LEVEL COMPLETE FUNCTION CALLED ===');
       console.log('Level complete called for difficulty:', completedDifficulty, 'with gameState:', gameState);
       
-      calculateProgress();
+      // Use gameState if available, otherwise get from userService
+      const finalCorrectWords = gameState?.correctWords || 0;
+      const finalIncorrectWords = gameState?.incorrectWords || 0;
+      const finalTotalTime = gameState?.elapsedTime || 0;
       
-      const userProgress = userService.getProgress(difficulty);
-      if (userProgress) {
-        const correctWords = Math.min(userProgress.correctWords, 5);
-        const newProgressPercentage = (correctWords / 5) * 100;
+      console.log('Final game state:', { finalCorrectWords, finalIncorrectWords, finalTotalTime });
+      
+      // Check if this is an exit (not a level completion)
+      const isExit = finalCorrectWords < 5;
+      
+      if (isExit) {
+        console.log('🚪 User exited during gameplay');
         
-        setProgress(prev => ({
-          ...prev,
-          [difficulty]: newProgressPercentage
-        }));
+        // For exit, return to main screen with entrance form
+        setDifficulty('beginner'); // Reset to beginner for next game
+        setShowUserForm(true); // Show the entrance form
+        return;
+      }
+      
+      // Check if level is actually completed (5 correct words)
+      if (finalCorrectWords >= 5) {
+        console.log('✅ Level is completed with 5 correct words');
+        
+        // Single point of progress update - use completedDifficulty
+        const currentProgress = userService.getProgress(completedDifficulty) || {
+          totalTime: 0,
+          timestamp: Date.now(),
+          correctWords: 0,
+          incorrectWords: 0
+        };
+        
+        // Update progress once and only once
+        userService.updateProgress(completedDifficulty, {
+          ...currentProgress,
+          correctWords: finalCorrectWords,
+          incorrectWords: finalIncorrectWords,
+          totalTime: finalTotalTime,
+          timestamp: Date.now()
+        });
+        
+        // Recalculate progress to update UI
+        calculateProgress();
 
-        if (newProgressPercentage >= 100) {
-          // Submit score to leaderboard when level is completed
-          const currentUser = userService.getUser();
-          const userName = currentUser?.name || 'Guest';
-          
-          // Use gameState if available, otherwise fall back to userProgress
-          const finalCorrectWords = gameState?.correctWords || correctWords;
-          const finalIncorrectWords = gameState?.incorrectWords || userProgress.incorrectWords;
-          const finalTotalTime = gameState?.elapsedTime || userProgress.totalTime;
-          
-          console.log('Submitting to leaderboard:', {
-            name: userName,
-            correctWords: finalCorrectWords,
-            incorrectWords: finalIncorrectWords,
-            totalTime: finalTotalTime
-          });
-          
-          // Submit to leaderboard with better error handling
-          leaderboardService.addEntry({
-            name: userName,
-            correctWords: finalCorrectWords,
-            incorrectWords: finalIncorrectWords,
-            totalTime: finalTotalTime
-          }).then(() => {
-            console.log('Leaderboard submission successful');
-          }).catch(error => {
-            console.error('Error submitting to leaderboard:', error);
-          });
+        // Submit score to leaderboard when level is completed
+        const currentUser = userService.getUser();
+        const userName = currentUser?.name || 'Guest';
+        
+        console.log('🏆 Submitting to leaderboard:', {
+          name: userName,
+          correctWords: finalCorrectWords,
+          incorrectWords: finalIncorrectWords,
+          totalTime: finalTotalTime
+        });
 
-          // Check if this is the final level (advanced)
-          if (difficulty === 'advanced') {
-            // Game completed - show final completion message and leaderboard
-            setDialogMessage('🎉 Congratulations! You have completed ALL levels! You are now a Thai sentence master! 🏆');
-            setDialogType('success');
-            setDialogButtonText('View Leaderboard');
-            setShowDialog(true);
-            setIsGameCompleted(true);
-          } else {
-            // Automatically move to the next level
-            const nextLevel = userService.getNextLevel(difficulty);
-            if (nextLevel) {
-              const completedLevel = difficulty; // Store the completed level name
-              
-              console.log('Moving from', completedLevel, 'to', nextLevel);
-              
-              // Show loading state
-              setIsChangingLevel(true);
-              
-              // Set the new difficulty immediately
-              setDifficulty(nextLevel);
-              
-              // Show completion message
-              setDialogMessage(`🎊 Level ${completedLevel.charAt(0).toUpperCase() + completedLevel.slice(1)} completed! Moving to ${nextLevel} level.`);
-              setDialogType('success');
-              setDialogButtonText('Continue');
-              setShowDialog(true);
-              
-              // Clear loading state after a short delay
-              setTimeout(() => {
-                setIsChangingLevel(false);
-              }, 1000);
+        leaderboardService.addEntry({
+          name: userName,
+          correctWords: finalCorrectWords,
+          incorrectWords: finalIncorrectWords,
+          totalTime: finalTotalTime
+        }).then(() => {
+          console.log('✅ Leaderboard submission successful');
+          // Force refresh the leaderboard display
+          setTimeout(() => {
+            if (showLeaderboard) {
+              setShowLeaderboard(false);
+              setTimeout(() => setShowLeaderboard(true), 100);
             }
-          }
-        } else {
-          // Still working on current level
-          const remaining = 5 - correctWords;
-          setDialogMessage(`Great job! ${remaining} more sentence${remaining !== 1 ? 's' : ''} to complete this level.`);
+          }, 1000);
+        }).catch(error => {
+          console.error('❌ Error submitting to leaderboard:', error);
+        });
+
+        // Check if this is the final level (advanced)
+        if (completedDifficulty === 'advanced') {
+          console.log('🎉 Game completed - showing final completion message');
+          setDialogMessage('🎉 Congratulations! You have completed ALL levels! You are now a Thai sentence master! 🏆');
           setDialogType('success');
-          setDialogButtonText('Continue');
+          setDialogButtonText('View Leaderboard');
           setShowDialog(true);
+          setIsGameCompleted(true);
+        } else {
+          // Automatically move to the next level
+          const nextLevel = userService.getNextLevel(completedDifficulty);
+          console.log('Next level determined:', nextLevel);
+          
+          if (nextLevel) {
+            const completedLevel = completedDifficulty;
+            
+            console.log('Moving from', completedLevel, 'to', nextLevel);
+            
+            // Show loading state
+            setIsChangingLevel(true);
+            
+            // Set the new difficulty immediately
+            setDifficulty(nextLevel);
+            
+            // Show completion message
+            setDialogMessage(`🎊 Level ${completedLevel.charAt(0).toUpperCase() + completedLevel.slice(1)} completed! Moving to ${nextLevel} level.`);
+            setDialogType('success');
+            setDialogButtonText('Continue');
+            setShowDialog(true);
+            
+            // Clear loading state after a short delay
+            setTimeout(() => {
+              setIsChangingLevel(false);
+            }, 1000);
+          } else {
+            console.error('Could not determine next level for difficulty:', completedDifficulty);
+            setDialogMessage('Level completed!');
+            setDialogType('success');
+            setDialogButtonText('Continue');
+            setShowDialog(true);
+          }
         }
       } else {
-        console.warn('No user progress found for difficulty:', difficulty);
-        // Fallback: show a generic completion message
-        setDialogMessage('Level completed! Moving to next level.');
+        console.log('❌ Level not completed yet. Correct words:', finalCorrectWords);
+        // Still working on current level
+        const remaining = 5 - finalCorrectWords;
+        setDialogMessage(`Great job! ${remaining} more sentence${remaining !== 1 ? 's' : ''} to complete this level.`);
         setDialogType('success');
         setDialogButtonText('Continue');
         setShowDialog(true);
       }
     } catch (error) {
-      console.error('Error in handleLevelComplete:', error);
+      console.error('❌ Error in handleLevelComplete:', error);
       // Fallback: show error message and try to continue
       setDialogMessage('Level completed! Moving to next level.');
       setDialogType('success');
@@ -427,12 +522,175 @@ const App: React.FC = () => {
     document.body.classList.remove('leaderboard-open');
   };
 
+  const handleDevelopmentReset = async () => {
+    try {
+      console.log('🧹 MANUAL DEVELOPMENT RESET');
+      
+      // Clear leaderboard
+      console.log('Clearing leaderboard...');
+      await leaderboardService.clearEntries();
+      
+      // Clear all player progress and session stats
+      console.log('Clearing player progress and session stats...');
+      userService.clearAllProgress();
+      userService.resetSessionStats();
+      userService.clearUser();
+      
+      // Reset all local state
+      setProgress({
+        beginner: 0,
+        intermediate: 0,
+        advanced: 0
+      });
+      setDifficulty('beginner');
+      setIsGameCompleted(false);
+      setShowUserForm(true);
+      setShowLeaderboard(false);
+      setShowDialog(false);
+      
+      console.log('✅ Complete development reset successful');
+      alert('🎯 Development reset complete! Fresh start ready.');
+      
+    } catch (error) {
+      console.error('❌ Error in development reset:', error);
+      alert('Error during development reset');
+    }
+  };
+
+  const handleAddTestEntry = async () => {
+    try {
+      console.log('🧪 Adding test entry for Bob test...');
+      await leaderboardService.addTestEntry();
+      alert('✅ Test entry "Bob test" added successfully! Check the leaderboard.');
+    } catch (error) {
+      console.error('❌ Error adding test entry:', error);
+      
+      let errorMessage = 'Error adding test entry';
+      if (error instanceof Error) {
+        errorMessage = `Error: ${error.message}`;
+      } else if (typeof error === 'object' && error !== null) {
+        errorMessage = `Error: ${JSON.stringify(error)}`;
+      }
+      
+      alert(errorMessage);
+      
+      // Offer to add a local test entry as fallback
+      const addLocal = confirm('Database error occurred. Would you like to add a local test entry instead?');
+      if (addLocal) {
+        handleAddLocalTestEntry();
+      }
+    }
+  };
+
+  const handleAddLocalTestEntry = () => {
+    try {
+      // Create a local test entry without database
+      const testEntry = {
+        name: 'Bob test (Local)',
+        correctWords: 100,
+        incorrectWords: 15,
+        totalTime: 1800
+      };
+      
+      // Add to local leaderboard array
+      leaderboardService['leaderboard'].unshift(testEntry);
+      
+      console.log('✅ Local test entry added:', testEntry);
+      alert('✅ Local test entry "Bob test (Local)" added! Check the leaderboard.');
+      
+      // Force leaderboard refresh
+      if (showLeaderboard) {
+        setShowLeaderboard(false);
+        setTimeout(() => setShowLeaderboard(true), 100);
+      }
+    } catch (error) {
+      console.error('❌ Error adding local test entry:', error);
+      alert('Error adding local test entry');
+    }
+  };
+
+  const handleTestConnection = async () => {
+    try {
+      const isConnected = await leaderboardService.testConnection();
+      if (isConnected) {
+        alert('✅ Supabase connection successful!');
+      } else {
+        alert('❌ Supabase connection failed! Check console for details.');
+      }
+    } catch (error) {
+      console.error('❌ Connection test error:', error);
+      alert('❌ Connection test error! Check console for details.');
+    }
+  };
+
   if (showUserForm) {
     return (
       <>
         <GlobalStyle />
         <FirstPageContainer data-first-page-container>
           <Title>Thai Sentence Builder</Title>
+          
+          {/* Development Mode Indicator for User Form */}
+          {isDevelopmentMode && (
+            <div style={{
+              background: '#ff9800',
+              color: 'white',
+              padding: '0.5rem 1rem',
+              borderRadius: '8px',
+              margin: '0.5rem 0',
+              textAlign: 'center',
+              fontWeight: 'bold',
+              border: '1px solid #f57c00',
+              fontSize: '0.9rem'
+            }}>
+              🔧 DEVELOPMENT MODE - Fresh start on each restart
+              <button 
+                onClick={handleDevelopmentReset}
+                style={{
+                  background: '#f57c00',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.25rem 0.5rem',
+                  borderRadius: '4px',
+                  marginLeft: '1rem',
+                  cursor: 'pointer',
+                  fontSize: '0.8rem'
+                }}
+              >
+                Reset Everything
+              </button>
+              <button 
+                onClick={handleAddTestEntry}
+                style={{
+                  background: '#4CAF50',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.25rem 0.5rem',
+                  borderRadius: '4px',
+                  marginLeft: '0.5rem',
+                  cursor: 'pointer',
+                  fontSize: '0.8rem'
+                }}
+              >
+                Add Bob Test
+              </button>
+              <button 
+                onClick={handleTestConnection}
+                style={{
+                  background: '#2196f3',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.25rem 0.5rem',
+                  borderRadius: '4px',
+                  marginLeft: '0.5rem',
+                  cursor: 'pointer',
+                  fontSize: '0.8rem'
+                }}
+              >
+                Test Connection
+              </button>
+            </div>
+          )}
           
           {showLeaderboard && (
             <LeaderboardSection>
@@ -491,6 +749,69 @@ const App: React.FC = () => {
         <GlobalStyle />
         <AppContainer>
           <Title>Thai Sentence Builder</Title>
+          
+          {/* Development Mode Indicator */}
+          {isDevelopmentMode && (
+            <div style={{
+              background: '#ff9800',
+              color: 'white',
+              padding: '0.5rem 1rem',
+              borderRadius: '8px',
+              margin: '0.5rem 0',
+              textAlign: 'center',
+              fontWeight: 'bold',
+              border: '1px solid #f57c00',
+              fontSize: '0.9rem'
+            }}>
+              🔧 DEVELOPMENT MODE - Fresh start on each restart
+              <button 
+                onClick={handleDevelopmentReset}
+                style={{
+                  background: '#f57c00',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.25rem 0.5rem',
+                  borderRadius: '4px',
+                  marginLeft: '1rem',
+                  cursor: 'pointer',
+                  fontSize: '0.8rem'
+                }}
+              >
+                Reset Everything
+              </button>
+              <button 
+                onClick={handleAddTestEntry}
+                style={{
+                  background: '#4CAF50',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.25rem 0.5rem',
+                  borderRadius: '4px',
+                  marginLeft: '0.5rem',
+                  cursor: 'pointer',
+                  fontSize: '0.8rem'
+                }}
+              >
+                Add Bob Test
+              </button>
+              <button 
+                onClick={handleTestConnection}
+                style={{
+                  background: '#2196f3',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.25rem 0.5rem',
+                  borderRadius: '4px',
+                  marginLeft: '0.5rem',
+                  cursor: 'pointer',
+                  fontSize: '0.8rem'
+                }}
+              >
+                Test Connection
+              </button>
+            </div>
+          )}
+          
           <ProgressText>{getProgressText()}</ProgressText>
           {isChangingLevel && (
             <div style={{

@@ -15,6 +15,12 @@ interface User {
     totalTime: number;
     timestamp: number;
   };
+  sessionStats?: {
+    totalCorrectWords: number;
+    totalIncorrectWords: number;
+    totalTime: number;
+    sessionStartTime: number;
+  };
 }
 
 class UserService {
@@ -46,7 +52,15 @@ class UserService {
   }
 
   public setUser(name: string): void {
-    this.currentUser = { name };
+    this.currentUser = { 
+      name,
+      sessionStats: {
+        totalCorrectWords: 0,
+        totalIncorrectWords: 0,
+        totalTime: 0,
+        sessionStartTime: Date.now()
+      }
+    };
     this.saveToStorage();
   }
 
@@ -126,31 +140,15 @@ class UserService {
 
       const key = `progress_${difficulty}`;
       
-      // Check if localStorage is available (important for mobile)
+      // Check if localStorage is available
       if (typeof window !== 'undefined' && window.localStorage) {
         localStorage.setItem(key, JSON.stringify(normalizedData));
+        console.log(`Progress updated for ${difficulty}:`, normalizedData);
       } else {
         console.warn('localStorage not available, progress not saved');
       }
     } catch (error) {
       console.error('Error updating progress:', error);
-      // Try again with a delay for mobile devices
-      setTimeout(() => {
-        try {
-          const normalizedData = {
-            totalTime: Math.max(0, Number(data.totalTime) || 0),
-            timestamp: Number(data.timestamp) || Date.now(),
-            correctWords: Math.max(0, Math.min(5, Number(data.correctWords) || 0)),
-            incorrectWords: Math.max(0, Number(data.incorrectWords) || 0)
-          };
-          const key = `progress_${difficulty}`;
-          if (typeof window !== 'undefined' && window.localStorage) {
-            localStorage.setItem(key, JSON.stringify(normalizedData));
-          }
-        } catch (retryError) {
-          console.error('Retry failed:', retryError);
-        }
-      }, 100);
     }
   }
 
@@ -178,6 +176,58 @@ class UserService {
         return 'advanced';
       default:
         return null;
+    }
+  }
+
+  public clearAllProgress(): void {
+    console.log('Clearing all progress for new player');
+    // Clear progress for all difficulty levels
+    Object.values(['beginner', 'intermediate', 'advanced'] as const).forEach(diff => {
+      this.clearProgress(diff);
+    });
+    console.log('All progress cleared');
+  }
+
+  // NEW: Session statistics methods
+  public getSessionStats() {
+    return this.currentUser?.sessionStats || {
+      totalCorrectWords: 0,
+      totalIncorrectWords: 0,
+      totalTime: 0,
+      sessionStartTime: Date.now()
+    };
+  }
+
+  public updateSessionStats(correctWords: number, incorrectWords: number, elapsedTime: number): void {
+    if (this.currentUser) {
+      if (!this.currentUser.sessionStats) {
+        this.currentUser.sessionStats = {
+          totalCorrectWords: 0,
+          totalIncorrectWords: 0,
+          totalTime: 0,
+          sessionStartTime: Date.now()
+        };
+      }
+
+      this.currentUser.sessionStats.totalCorrectWords += correctWords;
+      this.currentUser.sessionStats.totalIncorrectWords += incorrectWords;
+      this.currentUser.sessionStats.totalTime += elapsedTime;
+
+      this.saveToStorage();
+      console.log('Session stats updated:', this.currentUser.sessionStats);
+    }
+  }
+
+  public resetSessionStats(): void {
+    if (this.currentUser) {
+      this.currentUser.sessionStats = {
+        totalCorrectWords: 0,
+        totalIncorrectWords: 0,
+        totalTime: 0,
+        sessionStartTime: Date.now()
+      };
+      this.saveToStorage();
+      console.log('Session stats reset');
     }
   }
 }

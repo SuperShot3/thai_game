@@ -2,10 +2,12 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { generateSentence } from '../../services/sentenceGenerator';
 import { userService } from '../../services/userService';
+import { leaderboardService } from '../Leaderboard/leaderboardService';
 import { Difficulty, ThaiSentence } from '../../types';
 import DraggableWord from '../DraggableWord/DraggableWord';
 import DroppableZone from '../DroppableZone/DroppableZone';
 import Dialog from '../Dialog/Dialog';
+import AIHelpAssistant from '../AIHelpAssistant/AIHelpAssistant';
 import '../../styles/fonts.css';
 import { useDragContext } from '../DraggableWord/DragContext';
 import './GameBoard.css';
@@ -41,6 +43,54 @@ const DifficultyIndicator = styled.div`
   justify-content: center;
   font-weight: 500;
   letter-spacing: 0.5px;
+`;
+
+const SentenceCounter = styled.div`
+  background: rgba(76, 175, 80, 0.1);
+  padding: 0.5rem 1rem;
+  border-radius: 1.25rem;
+  font-size: 1rem;
+  color: #4CAF50;
+  margin-bottom: 1rem;
+  text-align: center;
+  border: 1px solid #4CAF50;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  animation: pulse 2s infinite;
+  
+  @keyframes pulse {
+    0% {
+      box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
+    }
+    50% {
+      box-shadow: 0 2px 12px rgba(76, 175, 80, 0.4);
+    }
+    100% {
+      box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
+    }
+  }
+`;
+
+const ProgressBar = styled.div`
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  margin-top: 0.5rem;
+  overflow: hidden;
+`;
+
+const ProgressFill = styled.div<{ progress: number }>`
+  height: 100%;
+  background: linear-gradient(90deg, #4CAF50, #45a049);
+  width: ${props => props.progress}%;
+  transition: width 0.3s ease;
+  border-radius: 2px;
 `;
 
 const SentenceContainer = styled.div`
@@ -125,6 +175,110 @@ const ButtonContainer = styled.div`
   box-sizing: border-box;
 `;
 
+const ExitButton = styled.button`
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  background: #e74c3c;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+
+  &:hover {
+    background: #c0392b;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    background: #95a5a6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+`;
+
+const ExitConfirmDialog = styled.div`
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  z-index: 10000;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  color: #333;
+  
+  h2 {
+    color: #333;
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+  }
+  
+  p {
+    color: #333;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+  }
+`;
+
+const ExitConfirmOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  backdrop-filter: blur(4px);
+`;
+
+const ExitConfirmButtons = styled.div`
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1.5rem;
+`;
+
+const ExitConfirmButton = styled.button<{ variant: 'confirm' | 'cancel' }>`
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  ${({ variant }) => variant === 'confirm' ? `
+    background: #e74c3c;
+    color: white;
+    
+    &:hover {
+      background: #c0392b;
+    }
+  ` : `
+    background: #95a5a6;
+    color: white;
+    
+    &:hover {
+      background: #7f8c8d;
+    }
+  `}
+`;
+
 const Button = styled.button<{ variant?: 'primary' | 'secondary' | 'danger' }>`
   padding: 12px 24px;
   border: none;
@@ -178,6 +332,26 @@ const Button = styled.button<{ variant?: 'primary' | 'secondary' | 'danger' }>`
   }
 `;
 
+const StatsDisplay = styled.div`
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+`;
+
+const StatItem = styled.div`
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
 // Fisher-Yates shuffle algorithm
 const shuffleArray = <T,>(array: T[]): T[] => {
   const shuffled = [...array];
@@ -199,7 +373,6 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
   const [userAnswer, setUserAnswer] = useState<string[]>([]);
   const [usedWords, setUsedWords] = useState<Set<string>>(new Set());
   const [isComplete, setIsComplete] = useState(false);
-  const [isCorrect, setIsCorrect] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [currentFont, setCurrentFont] = useState('font-1');
@@ -207,6 +380,15 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
   const [correctWords, setCorrectWords] = useState(0);
   const [incorrectWords, setIncorrectWords] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [isLevelCompleting, setIsLevelCompleting] = useState(false);
+  const [helpClickedThisRound, setHelpClickedThisRound] = useState(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [isExiting, setIsExiting] = useState(false);
+  const [sessionStats, setSessionStats] = useState({
+    totalCorrectWords: 0,
+    totalIncorrectWords: 0,
+    totalTime: 0
+  });
   const startTimeRef = useRef(Date.now());
   const { stopDrag, dragState, getActiveDropZone, dropZones } = useDragContext();
 
@@ -235,9 +417,9 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     setUserAnswer([]);
     setUsedWords(new Set()); // Reset used words for new sentence
     setIsComplete(false);
-    setIsCorrect(false);
     setShowDialog(false);
     setShowHint(false);
+    setHelpClickedThisRound(false); // Reset help state for new sentence
   }, [difficulty]);
 
   // Reset all state when difficulty changes
@@ -249,10 +431,10 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     setUserAnswer([]);
     setUsedWords(new Set());
     setIsComplete(false);
-    setIsCorrect(false);
     setShowDialog(false);
     setShowHint(false);
     setCurrentHintIndex(0);
+    setIsLevelCompleting(false);
     
     // Initialize progress from userService instead of resetting to 0
     const currentProgress = userService.getProgress(difficulty);
@@ -261,6 +443,11 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     setCorrectWords(currentProgress?.correctWords || 0);
     setIncorrectWords(currentProgress?.incorrectWords || 0);
     
+    // Load session statistics (persists across levels)
+    const sessionData = userService.getSessionStats();
+    setSessionStats(sessionData);
+    console.log('Session stats loaded:', sessionData);
+    
     setElapsedTime(0);
     startTimeRef.current = Date.now();
     
@@ -268,26 +455,24 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     generateNewSentence();
   }, [difficulty]);
 
-  // Separate timer effect
+  // Ensure progress is synchronized on mount
+  useEffect(() => {
+    const currentProgress = userService.getProgress(difficulty);
+    console.log('Component mounted - syncing progress for difficulty:', difficulty, 'Progress:', currentProgress);
+    
+    if (currentProgress) {
+      setCorrectWords(currentProgress.correctWords);
+      setIncorrectWords(currentProgress.incorrectWords);
+    }
+  }, []); // Only run on mount
+
+  // FIX: Remove the progress update from the timer
   useEffect(() => {
     const timer = setInterval(() => {
       const now = Date.now();
       const elapsed = Math.floor((now - startTimeRef.current) / 1000);
       setElapsedTime(elapsed);
-
-      // Update progress with new total time
-      const currentProgress = userService.getProgress(difficulty) || {
-        totalTime: 0,
-        timestamp: startTimeRef.current,
-        correctWords: 0,
-        incorrectWords: 0
-      };
-
-      userService.updateProgress(difficulty, {
-        ...currentProgress,
-        totalTime: currentProgress.totalTime + 1,
-        timestamp: now
-      });
+      // DON'T update progress here - only track time locally
     }, 1000);
 
     return () => clearInterval(timer);
@@ -358,7 +543,6 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
 
     const isAnswerCorrect = checkAnswer();
     setIsComplete(true);
-    setIsCorrect(isAnswerCorrect);
 
     const currentProgress = userService.getProgress(difficulty) || {
       totalTime: 0,
@@ -369,65 +553,67 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
 
     if (isAnswerCorrect) {
       const newCorrectWords = currentProgress.correctWords + 1;
-      setCorrectWords(prev => prev + 1);
+      console.log('Correct answer! Progress:', {
+        current: currentProgress.correctWords,
+        new: newCorrectWords,
+        difficulty
+      });
       
-      // Update progress with better error handling for mobile
-      try {
-        userService.updateProgress(difficulty, {
-          ...currentProgress,
-          correctWords: newCorrectWords,
-          timestamp: Date.now()
-        });
-      } catch (error) {
-        console.error('Error updating progress:', error);
-        // Fallback: try to update progress again
-        setTimeout(() => {
-          try {
-            userService.updateProgress(difficulty, {
-              ...currentProgress,
-              correctWords: newCorrectWords,
-              timestamp: Date.now()
-            });
-          } catch (retryError) {
-            console.error('Retry failed:', retryError);
-          }
-        }, 100);
-      }
+      setCorrectWords(newCorrectWords);
+      
+      // Single point of progress update
+      userService.updateProgress(difficulty, {
+        ...currentProgress,
+        correctWords: newCorrectWords,
+        timestamp: Date.now()
+      });
+      
+      // Update session statistics (persists across levels)
+      userService.updateSessionStats(1, 0, elapsedTime);
+      const updatedSessionStats = userService.getSessionStats();
+      setSessionStats(updatedSessionStats);
+      console.log('Session stats updated for correct answer:', updatedSessionStats);
       
       // Show completion dialog only when reaching exactly 5 correct words
       if (newCorrectWords === 5) {
-        console.log('Level completed! Calling onLevelComplete with:', {
-          difficulty,
-          correctWords: newCorrectWords,
-          incorrectWords: currentProgress.incorrectWords,
-          elapsedTime: elapsedTime
-        });
+        console.log('🎉 Level completed! Calling onLevelComplete');
         
-        // Call onLevelComplete immediately without delays
+        // Set level completing state
+        setIsLevelCompleting(true);
+        
+        // Call onLevelComplete with current game state
         onLevelComplete(difficulty, {
           correctWords: newCorrectWords,
           incorrectWords: currentProgress.incorrectWords,
           elapsedTime: elapsedTime
         });
+        
+        // Reset the state after calling onLevelComplete
+        setIsLevelCompleting(false);
       } else {
+        console.log('Not level complete yet. Progress:', newCorrectWords, '/ 5');
         // Generate new sentence after a short delay for any correct answer
         setTimeout(() => {
           generateNewSentence();
           setIsComplete(false);
-          setIsCorrect(false);
         }, 1000);
       }
     } else {
       setIncorrectWords(prev => prev + 1);
-      try {
-        userService.updateProgress(difficulty, {
-          ...currentProgress,
-          incorrectWords: currentProgress.incorrectWords + 1,
-          timestamp: Date.now()
-        });
-      } catch (error) {
-        console.error('Error updating incorrect progress:', error);
-      }
+      
+      // Update incorrect words count
+      userService.updateProgress(difficulty, {
+        ...currentProgress,
+        incorrectWords: currentProgress.incorrectWords + 1,
+        timestamp: Date.now()
+      });
+      
+      // Update session statistics (persists across levels)
+      userService.updateSessionStats(0, 1, elapsedTime);
+      const updatedSessionStats = userService.getSessionStats();
+      setSessionStats(updatedSessionStats);
+      console.log('Session stats updated for incorrect answer:', updatedSessionStats);
+      
       setShowDialog(true);
     }
   };
@@ -443,7 +629,6 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     setShowDialog(false);
     // Reset for retry on same sentence (only for incorrect answers)
     setIsComplete(false);
-    setIsCorrect(false);
     setUserAnswer(Array(currentSentence?.thaiWords.length || 0).fill(''));
     setUsedWords(new Set()); // Reset used words
   };
@@ -463,6 +648,100 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     }
   };
 
+  const getSentenceCounterText = () => {
+    if (correctWords >= 5) {
+      return "🎉 Level Complete!";
+    }
+    return `📝 Sentence ${correctWords + 1} of 5`;
+  };
+
+  const getSentenceCounterColor = () => {
+    if (correctWords >= 5) {
+      return "#FFD700"; // Gold for completion
+    }
+    return "#4CAF50"; // Green for in progress
+  };
+
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  const handleHelpClick = () => {
+    setHelpClickedThisRound(true);
+  };
+
+  const handleExitClick = () => {
+    if (isExiting || showExitConfirm) return; // Prevent multiple clicks
+    setShowExitConfirm(true);
+  };
+
+  const handleExitConfirm = async () => {
+    setIsExiting(true);
+    setShowExitConfirm(false);
+
+    try {
+      // Calculate current session stats for leaderboard save
+      const currentTime = Math.floor((Date.now() - startTimeRef.current) / 1000);
+      const totalSessionTime = sessionStats.totalTime + currentTime;
+      const totalSessionCorrect = sessionStats.totalCorrectWords + correctWords;
+      const totalSessionIncorrect = sessionStats.totalIncorrectWords + incorrectWords;
+
+      // Get current user
+      const currentUser = userService.getUser();
+      if (!currentUser) {
+        console.error('No user found for exit save');
+        return;
+      }
+
+      // Save to leaderboard with session stats
+      await leaderboardService.addEntry({
+        name: currentUser.name,
+        correctWords: totalSessionCorrect,
+        incorrectWords: totalSessionIncorrect,
+        totalTime: totalSessionTime
+      });
+
+      console.log('✅ Exit stats saved to leaderboard:', {
+        name: currentUser.name,
+        correctWords: totalSessionCorrect,
+        incorrectWords: totalSessionIncorrect,
+        totalTime: totalSessionTime
+      });
+
+      // Update session stats before exiting
+      userService.updateSessionStats(correctWords, incorrectWords, currentTime);
+
+      // IMPORTANT: Send only current level stats for exit detection
+      // This ensures the system knows it's an exit, not a level completion
+      onLevelComplete(difficulty, {
+        correctWords: correctWords, // Only current level correct words
+        incorrectWords: incorrectWords, // Only current level incorrect words
+        elapsedTime: currentTime // Only current level time
+      });
+
+    } catch (error) {
+      console.error('❌ Error saving exit stats:', error);
+      // Still exit even if save fails - send only current level stats
+      onLevelComplete(difficulty, {
+        correctWords: correctWords,
+        incorrectWords: incorrectWords,
+        elapsedTime: Math.floor((Date.now() - startTimeRef.current) / 1000)
+      });
+    }
+  };
+
+  const handleExitCancel = () => {
+    setShowExitConfirm(false);
+  };
+
+  // Calculate current stats for display
+  const currentTime = Math.floor((Date.now() - startTimeRef.current) / 1000);
+  const totalSessionTime = sessionStats.totalTime + currentTime;
+  const totalSessionCorrect = sessionStats.totalCorrectWords + correctWords;
+  const totalSessionIncorrect = sessionStats.totalIncorrectWords + incorrectWords;
+
   if (!currentSentence) return null;
 
   return (
@@ -470,6 +749,61 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
       <DifficultyIndicator>
         Level: {difficulty}
       </DifficultyIndicator>
+      
+      <SentenceCounter style={{ color: getSentenceCounterColor() }}>
+        {getSentenceCounterText()}
+        <ProgressBar>
+          <ProgressFill progress={(correctWords / 5) * 100} />
+        </ProgressBar>
+      </SentenceCounter>
+      
+      <StatsDisplay>
+        <StatItem>
+          ✅ Level: {correctWords}/5
+        </StatItem>
+        <StatItem>
+          ❌ Level: {incorrectWords}
+        </StatItem>
+        <StatItem>
+          ⏱️ Level: {formatTime(elapsedTime)}
+        </StatItem>
+      </StatsDisplay>
+      
+      {/* Session Statistics */}
+      <div style={{
+        background: 'rgba(33, 150, 243, 0.1)',
+        padding: '0.5rem 1rem',
+        borderRadius: '8px',
+        margin: '0.5rem 0',
+        textAlign: 'center',
+        border: '1px solid #2196f3',
+        fontSize: '0.9rem'
+      }}>
+        <div style={{ fontWeight: 'bold', color: '#2196f3', marginBottom: '0.25rem' }}>
+          🏆 Session Total
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-around', gap: '1rem' }}>
+          <span>✅ {sessionStats.totalCorrectWords}</span>
+          <span>❌ {sessionStats.totalIncorrectWords}</span>
+          <span>⏱️ {formatTime(sessionStats.totalTime)}</span>
+        </div>
+      </div>
+      
+      {isLevelCompleting && (
+        <div style={{
+          background: 'rgba(76, 175, 80, 0.1)',
+          color: '#4CAF50',
+          padding: '0.5rem 1rem',
+          borderRadius: '8px',
+          margin: '0.5rem 0',
+          textAlign: 'center',
+          fontWeight: 'bold',
+          border: '1px solid #4CAF50'
+        }}>
+          🎉 Level Completed! Moving to next level...
+        </div>
+      )}
+      
       <SentenceContainer>
         <EnglishText>
           {showHint 
@@ -538,17 +872,109 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
         >
           Clear
         </Button>
+        <Button 
+          variant="secondary" 
+          onClick={handleTryAgain}
+          disabled={isComplete}
+        >
+          Try Again
+        </Button>
+        <Button 
+          variant="danger" 
+          onClick={handleExitClick}
+          disabled={isExiting}
+        >
+          {isExiting ? 'Exiting...' : 'Exit'}
+        </Button>
       </ButtonContainer>
 
-      {showDialog && (
-        <Dialog
-          message="Try again! Your answer is incorrect."
-          type="error"
-          onClose={handleTryAgain}
-        />
+      {/* AI Help Assistant */}
+      <AIHelpAssistant
+        targetSentence={currentSentence.thaiWords}
+        userAnswer={userAnswer}
+        availableWords={shuffledWords}
+        helpClickedThisRound={helpClickedThisRound}
+        onHelpClick={handleHelpClick}
+      />
+
+      {/* Exit Confirmation Dialog */}
+      {showExitConfirm && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.7)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: 'white',
+            padding: '2rem',
+            borderRadius: '12px',
+            maxWidth: '400px',
+            textAlign: 'center',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'
+          }}>
+            <h3 style={{ marginTop: 0, color: '#333' }}>Exit Game?</h3>
+            <p style={{ color: '#666', marginBottom: '1.5rem' }}>
+              Your current session stats will be saved to the leaderboard:
+            </p>
+            <div style={{
+              background: '#f5f5f5',
+              padding: '1rem',
+              borderRadius: '8px',
+              marginBottom: '1.5rem',
+              fontSize: '0.9rem'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                <span>✅ Correct:</span>
+                <span style={{ fontWeight: 'bold' }}>{totalSessionCorrect}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                <span>❌ Incorrect:</span>
+                <span style={{ fontWeight: 'bold' }}>{totalSessionIncorrect}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>⏱️ Time:</span>
+                <span style={{ fontWeight: 'bold' }}>{formatTime(totalSessionTime)}</span>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+              <button
+                onClick={handleExitCancel}
+                style={{
+                  padding: '0.5rem 1rem',
+                  border: '1px solid #ccc',
+                  borderRadius: '6px',
+                  background: 'white',
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleExitConfirm}
+                style={{
+                  padding: '0.5rem 1rem',
+                  border: 'none',
+                  borderRadius: '6px',
+                  background: '#dc3545',
+                  color: 'white',
+                  cursor: 'pointer'
+                }}
+              >
+                Exit & Save
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </GameBoardContainer>
   );
 };
 
-export default GameBoard; 
+export default GameBoard;
