@@ -203,10 +203,22 @@ const App: React.FC = () => {
   const [dialogButtonText, setDialogButtonText] = useState('Close');
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
 
+  // Add effect to recalculate progress when showing dialog
   useEffect(() => {
-    // Initialize progress from user service
+    if (showDialog) {
+      calculateProgress();
+    }
+  }, [showDialog]);
+
+  // Add effect to recalculate progress when difficulty changes
+  useEffect(() => {
     calculateProgress();
   }, [difficulty]);
+
+  // Initialize progress when app starts
+  useEffect(() => {
+    calculateProgress();
+  }, []);
 
   const calculateProgress = () => {
     const newProgress: { [key in Difficulty]: number } = {
@@ -227,13 +239,6 @@ const App: React.FC = () => {
     
     setProgress(newProgress);
   };
-
-  // Add effect to recalculate progress when showing dialog
-  useEffect(() => {
-    if (showDialog) {
-      calculateProgress();
-    }
-  }, [showDialog]);
 
   const handleUserSubmit = (userData: { name: string }) => {
     userService.setUser(userData.name);
@@ -276,10 +281,12 @@ const App: React.FC = () => {
           setShowDialog(true);
           setIsGameCompleted(true);
         } else {
-          // Show level completion message but don't automatically move to next level
+          // Automatically move to the next level
           const nextLevel = userService.getNextLevel(difficulty);
           if (nextLevel) {
-            setDialogMessage(`🎊 Level ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)} completed! You can now try the ${nextLevel} level.`);
+            const completedLevel = difficulty; // Store the completed level name
+            setDifficulty(nextLevel);
+            setDialogMessage(`🎊 Level ${completedLevel.charAt(0).toUpperCase() + completedLevel.slice(1)} completed! Moving to ${nextLevel} level.`);
             setDialogType('success');
             setDialogButtonText('Continue');
             setShowDialog(true);

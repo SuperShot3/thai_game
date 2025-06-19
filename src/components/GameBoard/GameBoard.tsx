@@ -6,7 +6,6 @@ import { Difficulty, ThaiSentence } from '../../types';
 import DraggableWord from '../DraggableWord/DraggableWord';
 import DroppableZone from '../DroppableZone/DroppableZone';
 import Dialog from '../Dialog/Dialog';
-import GameCompletionDialog from '../GameCompletionDialog/GameCompletionDialog';
 import '../../styles/fonts.css';
 import { useDragContext } from '../DraggableWord/DragContext';
 import './GameBoard.css';
@@ -202,7 +201,6 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
   const [isComplete, setIsComplete] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
-  const [showCompletionDialog, setShowCompletionDialog] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [currentFont, setCurrentFont] = useState('font-1');
   const [currentHintIndex, setCurrentHintIndex] = useState(0);
@@ -251,11 +249,14 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     setIsComplete(false);
     setIsCorrect(false);
     setShowDialog(false);
-    setShowCompletionDialog(false);
     setShowHint(false);
     setCurrentHintIndex(0);
-    setCorrectWords(0);
-    setIncorrectWords(0);
+    
+    // Initialize progress from userService instead of resetting to 0
+    const currentProgress = userService.getProgress(difficulty);
+    setCorrectWords(currentProgress?.correctWords || 0);
+    setIncorrectWords(currentProgress?.incorrectWords || 0);
+    
     setElapsedTime(0);
     startTimeRef.current = Date.now();
     generateNewSentence();
@@ -371,7 +372,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
       
       // Show completion dialog only when reaching exactly 5 correct words
       if (newCorrectWords === 5) {
-        setShowCompletionDialog(true);
+        onLevelComplete(difficulty);
       } else {
         // Generate new sentence after a short delay for any correct answer
         setTimeout(() => {
@@ -419,28 +420,6 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
   const showNextHint = () => {
     if (currentSentence && currentHintIndex < currentSentence.hints.length - 1) {
       setCurrentHintIndex(prev => prev + 1);
-    }
-  };
-
-  const handleRestart = () => {
-    setShowCompletionDialog(false);
-    setCorrectWords(0);
-    setIncorrectWords(0);
-    userService.clearUser();
-    window.location.reload();
-  };
-
-  const handleClose = () => {
-    setShowCompletionDialog(false);
-    // Only call onLevelComplete when we've actually completed the level (5 correct words)
-    const progress = userService.getProgress(difficulty);
-    if (progress && progress.correctWords >= 5) {
-      onLevelComplete(difficulty);
-    } else {
-      // If level is not complete, just generate a new sentence
-      generateNewSentence();
-      setIsComplete(false);
-      setIsCorrect(false);
     }
   };
 
@@ -526,18 +505,6 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
           message="Try again! Your answer is incorrect."
           type="error"
           onClose={handleTryAgain}
-        />
-      )}
-
-      {showCompletionDialog && (
-        <GameCompletionDialog
-          onClose={handleClose}
-          onRestart={handleRestart}
-          score={correctWords * 10}
-          correctWords={correctWords}
-          incorrectWords={incorrectWords}
-          difficulty={difficulty}
-          totalTime={elapsedTime}
         />
       )}
     </GameBoardContainer>
