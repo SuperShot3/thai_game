@@ -104,37 +104,6 @@ const SentenceContainer = styled.div`
   box-sizing: border-box;
 `;
 
-const EnglishText = styled.div`
-  font-size: 1.2rem;
-  color: #495057;
-  text-align: center;
-  margin-bottom: 1rem;
-  min-height: 2.4rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
-
-const HintButton = styled.button`
-  background: #4dabf7;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: all 0.2s;
-
-  &:hover {
-    background: #339af0;
-  }
-
-  &:disabled {
-    background: #adb5bd;
-    cursor: not-allowed;
-  }
-`;
-
 const WordContainer = styled.div`
   display: flex;
   flex-wrap: wrap;
@@ -659,12 +628,6 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
           🎉 Level Completed! Moving to next level...
         </div>
       )}
-      
-      <SentenceContainer>
-        <EnglishText>
-          {currentSentence.english}
-        </EnglishText>
-      </SentenceContainer>
       
       <AnswerContainer>
         {currentSentence.thaiWords.map((_: string, index: number) => (
