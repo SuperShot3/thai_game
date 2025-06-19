@@ -27,12 +27,29 @@ class LeaderboardService {
 
   private async getIpAddress(): Promise<string> {
     try {
-      const response = await fetch('https://api.ipify.org?format=json');
+      console.log('Fetching IP address...');
+      const response = await fetch('https://api.ipify.org?format=json', {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+        // Add timeout for mobile devices
+        signal: AbortSignal.timeout(5000)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
+      console.log('IP address fetched successfully:', data.ip);
       return data.ip;
     } catch (error) {
       console.error('Error fetching IP address:', error);
-      return 'unknown';
+      // Fallback: generate a random identifier for mobile
+      const fallbackId = `mobile_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      console.log('Using fallback ID:', fallbackId);
+      return fallbackId;
     }
   }
 
@@ -107,9 +124,11 @@ class LeaderboardService {
 
   public async addEntry(entry: Omit<LeaderboardEntry, 'name'> & { name: string }): Promise<void> {
     const name = entry.name || `Guest ${this.generateGuestNumber()}`;
-    const ipAddress = await this.getIpAddress();
     
     try {
+      const ipAddress = await this.getIpAddress();
+      console.log('IP Address obtained:', ipAddress);
+      
       console.log('Attempting to add entry to leaderboard:', {
         player_name: name,
         correct: entry.correctWords,
@@ -127,8 +146,11 @@ class LeaderboardService {
 
       if (fetchError) {
         console.error('Error checking existing entries:', fetchError);
+        console.error('Fetch error details:', fetchError.message, fetchError.details, fetchError.hint);
         return;
       }
+
+      console.log('Existing entries found:', existingEntries?.length || 0);
 
       const newEntry = {
         player_name: entry.name,
@@ -145,19 +167,31 @@ class LeaderboardService {
           this.isBetterScore(current, best) ? current : best
         );
 
+        console.log('Comparing scores:', {
+          new: newEntry,
+          existing: bestExisting,
+          isBetter: this.isBetterScore(newEntry, bestExisting)
+        });
+
         if (!this.isBetterScore(newEntry, bestExisting)) {
           console.log('New score is not better than existing score, skipping...');
           return;
         }
 
         // Delete old entries for this IP or name
-        await supabase
+        console.log('Deleting old entries for IP/name:', ipAddress, entry.name);
+        const { error: deleteError } = await supabase
           .from('leaderboard')
           .delete()
           .or(`ip_address.eq.${ipAddress},player_name.eq.${entry.name}`);
+
+        if (deleteError) {
+          console.error('Error deleting old entries:', deleteError);
+        }
       }
 
       // Add the new entry
+      console.log('Inserting new entry:', newEntry);
       const { error: insertError } = await supabase
         .from('leaderboard')
         .insert([newEntry]);
@@ -165,9 +199,13 @@ class LeaderboardService {
       if (insertError) {
         console.error('Supabase Insert Error:', insertError.message);
         console.error('Error Details:', insertError);
+        console.error('Error Code:', insertError.code);
+        console.error('Error Details:', insertError.details);
+        console.error('Error Hint:', insertError.hint);
         return;
       }
 
+      console.log('Entry successfully added to leaderboard');
       await this.loadLeaderboard();
     } catch (error) {
       console.error('Unexpected error in addEntry:', error);
@@ -175,6 +213,8 @@ class LeaderboardService {
         console.error('Error message:', error.message);
         console.error('Error stack:', error.stack);
       }
+      // Re-throw the error so the calling code can handle it
+      throw error;
     }
   }
 

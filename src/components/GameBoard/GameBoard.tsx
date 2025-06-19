@@ -190,7 +190,7 @@ const shuffleArray = <T,>(array: T[]): T[] => {
 
 interface GameBoardProps {
   difficulty: Difficulty;
-  onLevelComplete: (difficulty: Difficulty) => void;
+  onLevelComplete: (difficulty: Difficulty, gameState?: { correctWords: number; incorrectWords: number; elapsedTime: number }) => void;
 }
 
 const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) => {
@@ -242,6 +242,8 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
 
   // Reset all state when difficulty changes
   useEffect(() => {
+    console.log('Difficulty changed to:', difficulty);
+    
     setCurrentSentence(null);
     setShuffledWords([]);
     setUserAnswer([]);
@@ -254,16 +256,16 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     
     // Initialize progress from userService instead of resetting to 0
     const currentProgress = userService.getProgress(difficulty);
+    console.log('Loading progress for difficulty:', difficulty, 'Progress:', currentProgress);
+    
     setCorrectWords(currentProgress?.correctWords || 0);
     setIncorrectWords(currentProgress?.incorrectWords || 0);
     
     setElapsedTime(0);
     startTimeRef.current = Date.now();
     
-    // Add a small delay for mobile to ensure state is properly set
-    setTimeout(() => {
-      generateNewSentence();
-    }, 50);
+    // Generate new sentence immediately for better mobile performance
+    generateNewSentence();
   }, [difficulty]);
 
   // Separate timer effect
@@ -394,18 +396,19 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
       
       // Show completion dialog only when reaching exactly 5 correct words
       if (newCorrectWords === 5) {
-        // Add a small delay for mobile to ensure state is updated
-        setTimeout(() => {
-          try {
-            onLevelComplete(difficulty);
-          } catch (error) {
-            console.error('Error calling onLevelComplete:', error);
-            // Fallback: try again
-            setTimeout(() => {
-              onLevelComplete(difficulty);
-            }, 100);
-          }
-        }, 50);
+        console.log('Level completed! Calling onLevelComplete with:', {
+          difficulty,
+          correctWords: newCorrectWords,
+          incorrectWords: currentProgress.incorrectWords,
+          elapsedTime: elapsedTime
+        });
+        
+        // Call onLevelComplete immediately without delays
+        onLevelComplete(difficulty, {
+          correctWords: newCorrectWords,
+          incorrectWords: currentProgress.incorrectWords,
+          elapsedTime: elapsedTime
+        });
       } else {
         // Generate new sentence after a short delay for any correct answer
         setTimeout(() => {

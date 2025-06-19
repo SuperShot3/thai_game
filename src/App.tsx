@@ -12,6 +12,7 @@ import { DragProvider } from './components/DraggableWord/DragContext';
 import DragLayer from './components/DraggableWord/DragLayer';
 import FeedbackButton from './components/Feedback/FeedbackButton';
 import FeedbackModal from './components/Feedback/FeedbackModal';
+import { leaderboardService } from './components/Leaderboard/leaderboardService';
 
 const GlobalStyle = createGlobalStyle`
   * {
@@ -202,6 +203,7 @@ const App: React.FC = () => {
   const [isGameCompleted, setIsGameCompleted] = useState(false);
   const [dialogButtonText, setDialogButtonText] = useState('Close');
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [isChangingLevel, setIsChangingLevel] = useState(false);
 
   // Add effect to recalculate progress when showing dialog
   useEffect(() => {
@@ -258,8 +260,10 @@ const App: React.FC = () => {
     setIsCommercialMode((prev) => !prev);
   };
 
-  const handleLevelComplete = () => {
+  const handleLevelComplete = (completedDifficulty: Difficulty, gameState?: { correctWords: number; incorrectWords: number; elapsedTime: number }) => {
     try {
+      console.log('Level complete called for difficulty:', completedDifficulty, 'with gameState:', gameState);
+      
       calculateProgress();
       
       const userProgress = userService.getProgress(difficulty);
@@ -273,12 +277,40 @@ const App: React.FC = () => {
         }));
 
         if (newProgressPercentage >= 100) {
+          // Submit score to leaderboard when level is completed
+          const currentUser = userService.getUser();
+          const userName = currentUser?.name || 'Guest';
+          
+          // Use gameState if available, otherwise fall back to userProgress
+          const finalCorrectWords = gameState?.correctWords || correctWords;
+          const finalIncorrectWords = gameState?.incorrectWords || userProgress.incorrectWords;
+          const finalTotalTime = gameState?.elapsedTime || userProgress.totalTime;
+          
+          console.log('Submitting to leaderboard:', {
+            name: userName,
+            correctWords: finalCorrectWords,
+            incorrectWords: finalIncorrectWords,
+            totalTime: finalTotalTime
+          });
+          
+          // Submit to leaderboard with better error handling
+          leaderboardService.addEntry({
+            name: userName,
+            correctWords: finalCorrectWords,
+            incorrectWords: finalIncorrectWords,
+            totalTime: finalTotalTime
+          }).then(() => {
+            console.log('Leaderboard submission successful');
+          }).catch(error => {
+            console.error('Error submitting to leaderboard:', error);
+          });
+
           // Check if this is the final level (advanced)
           if (difficulty === 'advanced') {
-            // Game completed - show final completion message
+            // Game completed - show final completion message and leaderboard
             setDialogMessage('🎉 Congratulations! You have completed ALL levels! You are now a Thai sentence master! 🏆');
             setDialogType('success');
-            setDialogButtonText('Play Again');
+            setDialogButtonText('View Leaderboard');
             setShowDialog(true);
             setIsGameCompleted(true);
           } else {
@@ -287,26 +319,24 @@ const App: React.FC = () => {
             if (nextLevel) {
               const completedLevel = difficulty; // Store the completed level name
               
-              // Add a small delay for mobile to ensure state updates properly
+              console.log('Moving from', completedLevel, 'to', nextLevel);
+              
+              // Show loading state
+              setIsChangingLevel(true);
+              
+              // Set the new difficulty immediately
+              setDifficulty(nextLevel);
+              
+              // Show completion message
+              setDialogMessage(`🎊 Level ${completedLevel.charAt(0).toUpperCase() + completedLevel.slice(1)} completed! Moving to ${nextLevel} level.`);
+              setDialogType('success');
+              setDialogButtonText('Continue');
+              setShowDialog(true);
+              
+              // Clear loading state after a short delay
               setTimeout(() => {
-                try {
-                  setDifficulty(nextLevel);
-                  setDialogMessage(`🎊 Level ${completedLevel.charAt(0).toUpperCase() + completedLevel.slice(1)} completed! Moving to ${nextLevel} level.`);
-                  setDialogType('success');
-                  setDialogButtonText('Continue');
-                  setShowDialog(true);
-                } catch (error) {
-                  console.error('Error setting next level:', error);
-                  // Fallback: try again
-                  setTimeout(() => {
-                    setDifficulty(nextLevel);
-                    setDialogMessage(`🎊 Level ${completedLevel.charAt(0).toUpperCase() + completedLevel.slice(1)} completed! Moving to ${nextLevel} level.`);
-                    setDialogType('success');
-                    setDialogButtonText('Continue');
-                    setShowDialog(true);
-                  }, 100);
-                }
-              }, 50);
+                setIsChangingLevel(false);
+              }, 1000);
             }
           }
         } else {
@@ -337,13 +367,13 @@ const App: React.FC = () => {
 
   const handleDialogClose = () => {
     setShowDialog(false);
-    // If game is completed, offer restart option
+    
+    // If game is completed, show leaderboard
     if (isGameCompleted) {
-      if (window.confirm('Would you like to restart the game and play again?')) {
-        handleGameRestart();
-      }
+      setShowLeaderboard(true);
+      // Add class to body to allow scrolling
+      document.body.classList.add('leaderboard-open');
     }
-    // Remove automatic level transition on dialog close
   };
 
   const handleGameRestart = () => {
@@ -407,6 +437,25 @@ const App: React.FC = () => {
           {showLeaderboard && (
             <LeaderboardSection>
               <Leaderboard onClose={handleHideLeaderboard} showCloseButton={true} />
+              {isGameCompleted && (
+                <Button 
+                  onClick={handleGameRestart}
+                  style={{
+                    background: '#4CAF50',
+                    color: 'white',
+                    padding: '1rem 2rem',
+                    fontSize: '1.1rem',
+                    fontWeight: 'bold',
+                    border: '2px solid #45a049',
+                    boxShadow: '0 4px 8px rgba(76, 175, 80, 0.3)',
+                    marginTop: '1rem',
+                    borderRadius: '8px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  🎮 Play Again
+                </Button>
+              )}
             </LeaderboardSection>
           )}
           
@@ -443,6 +492,20 @@ const App: React.FC = () => {
         <AppContainer>
           <Title>Thai Sentence Builder</Title>
           <ProgressText>{getProgressText()}</ProgressText>
+          {isChangingLevel && (
+            <div style={{
+              background: 'rgba(76, 175, 80, 0.1)',
+              color: '#4CAF50',
+              padding: '0.5rem 1rem',
+              borderRadius: '8px',
+              margin: '0.5rem 0',
+              textAlign: 'center',
+              fontWeight: 'bold',
+              border: '1px solid #4CAF50'
+            }}>
+              🔄 Changing Level...
+            </div>
+          )}
           <DifficultySelector
             currentDifficulty={difficulty}
             progress={progress}
