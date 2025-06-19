@@ -98,7 +98,7 @@ const ErrorState = styled(EmptyState)`
 
 const CloseButton = styled.button`
   position: absolute;
-  top: 1rem;
+  top: 2rem;
   right: 1rem;
   background: #f44336;
   color: white;

@@ -269,16 +269,14 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
   const [usedWords, setUsedWords] = useState<Set<string>>(new Set());
   const [isComplete, setIsComplete] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
-  const [showHint, setShowHint] = useState(false);
   const [currentFont, setCurrentFont] = useState('font-1');
-  const [currentHintIndex, setCurrentHintIndex] = useState(0);
   const [correctWords, setCorrectWords] = useState(0);
   const [incorrectWords, setIncorrectWords] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [isExiting, setIsExiting] = useState(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [isLevelCompleting, setIsLevelCompleting] = useState(false);
   const [helpClickedThisRound, setHelpClickedThisRound] = useState(false);
-  const [showExitConfirm, setShowExitConfirm] = useState(false);
-  const [isExiting, setIsExiting] = useState(false);
   const [sessionStats, setSessionStats] = useState({
     totalCorrectWords: 0,
     totalIncorrectWords: 0,
@@ -313,7 +311,6 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     setUsedWords(new Set()); // Reset used words for new sentence
     setIsComplete(false);
     setShowDialog(false);
-    setShowHint(false);
     setHelpClickedThisRound(false); // Reset help state for new sentence
   }, [difficulty]);
 
@@ -324,9 +321,6 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     setUserAnswer([]);
     setUsedWords(new Set());
     setIsComplete(false);
-    setShowHint(false);
-    setCurrentHintIndex(0);
-    setHelpClickedThisRound(false);
     
     setElapsedTime(0);
     startTimeRef.current = Date.now();
@@ -505,29 +499,6 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     setUsedWords(new Set()); // Reset used words
   };
 
-  const handleTryAgain = () => {
-    setShowDialog(false);
-    // Reset for retry on same sentence (only for incorrect answers)
-    setIsComplete(false);
-    setUserAnswer(Array(currentSentence?.thaiWords.length || 0).fill(''));
-    setUsedWords(new Set()); // Reset used words
-  };
-
-  const toggleHint = () => {
-    if (showHint) {
-      setShowHint(false);
-      setCurrentHintIndex(0);
-    } else {
-      setShowHint(true);
-    }
-  };
-
-  const showNextHint = () => {
-    if (currentSentence && currentHintIndex < currentSentence.hints.length - 1) {
-      setCurrentHintIndex(prev => prev + 1);
-    }
-  };
-
   const getSentenceCounterText = () => {
     if (correctWords >= 5) {
       return "🎉 Level Complete!";
@@ -575,20 +546,25 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
         return;
       }
 
-      // Save to leaderboard with session stats
-      await leaderboardService.addEntry({
-        name: currentUser.name,
-        correctWords: totalSessionCorrect,
-        incorrectWords: totalSessionIncorrect,
-        totalTime: totalSessionTime
-      });
+      // Don't save scores for Guest users
+      if (currentUser.name === 'Guest') {
+        console.log('🚫 Guest user - skipping leaderboard save');
+      } else {
+        // Save to leaderboard with session stats only for non-Guest users
+        await leaderboardService.addEntry({
+          name: currentUser.name,
+          correctWords: totalSessionCorrect,
+          incorrectWords: totalSessionIncorrect,
+          totalTime: totalSessionTime
+        });
 
-      console.log('✅ Exit stats saved to leaderboard:', {
-        name: currentUser.name,
-        correctWords: totalSessionCorrect,
-        incorrectWords: totalSessionIncorrect,
-        totalTime: totalSessionTime
-      });
+        console.log('✅ Exit stats saved to leaderboard:', {
+          name: currentUser.name,
+          correctWords: totalSessionCorrect,
+          incorrectWords: totalSessionIncorrect,
+          totalTime: totalSessionTime
+        });
+      }
 
       // Update session stats before exiting
       userService.updateSessionStats(correctWords, incorrectWords, currentTime);
@@ -686,20 +662,8 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
       
       <SentenceContainer>
         <EnglishText>
-          {showHint 
-            ? currentSentence.hints[currentHintIndex]
-            : 'Click hint to see word hints'}
+          {currentSentence.english}
         </EnglishText>
-        <div style={{ display: 'flex', gap: '10px' }}>
-        <HintButton onClick={toggleHint}>
-          {showHint ? 'Hide Hint' : 'Show Hint'}
-        </HintButton>
-          {showHint && currentSentence.hints.length > 1 && (
-            <HintButton onClick={showNextHint}>
-              Next Hint
-            </HintButton>
-          )}
-        </div>
       </SentenceContainer>
       
       <AnswerContainer>
@@ -753,13 +717,6 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
           Clear
         </Button>
         <Button 
-          variant="secondary" 
-          onClick={handleTryAgain}
-          disabled={isComplete}
-        >
-          Try Again
-        </Button>
-        <Button 
           variant="danger" 
           onClick={handleExitClick}
           disabled={isExiting}
@@ -799,9 +756,12 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
             textAlign: 'center',
             boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'
           }}>
-            <h3 style={{ marginTop: 0, color: '#333' }}>Exit Game?</h3>
-            <p style={{ color: '#666', marginBottom: '1.5rem' }}>
-              Your current session stats will be saved to the leaderboard:
+            <h3 style={{ marginTop: 0, color: '#000' }}>Exit Game?</h3>
+            <p style={{ color: '#000', marginBottom: '1.5rem' }}>
+              {userService.getUser()?.name === 'Guest' 
+                ? 'Your session will end without saving to leaderboard:'
+                : 'Your current session stats will be saved to the leaderboard:'
+              }
             </p>
             <div style={{
               background: '#f5f5f5',
@@ -810,15 +770,15 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
               marginBottom: '1.5rem',
               fontSize: '0.9rem'
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', color: '#000' }}>
                 <span>✅ Correct:</span>
                 <span style={{ fontWeight: 'bold' }}>{totalSessionCorrect}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', color: '#000' }}>
                 <span>❌ Incorrect:</span>
                 <span style={{ fontWeight: 'bold' }}>{totalSessionIncorrect}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#000' }}>
                 <span>⏱️ Time:</span>
                 <span style={{ fontWeight: 'bold' }}>{formatTime(totalSessionTime)}</span>
               </div>
@@ -831,7 +791,8 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
                   border: '1px solid #ccc',
                   borderRadius: '6px',
                   background: 'white',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  color: '#000'
                 }}
               >
                 Cancel
@@ -847,7 +808,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
                   cursor: 'pointer'
                 }}
               >
-                Exit & Save
+                {userService.getUser()?.name === 'Guest' ? 'Exit' : 'Exit & Save'}
               </button>
             </div>
           </div>
