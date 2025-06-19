@@ -283,6 +283,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     totalTime: 0
   });
   const startTimeRef = useRef(Date.now());
+  const lastUpdateTimeRef = useRef(startTimeRef.current);
   const { stopDrag, dragState, getActiveDropZone, dropZones } = useDragContext();
 
   const getRandomFont = () => {
@@ -324,6 +325,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     
     setElapsedTime(0);
     startTimeRef.current = Date.now();
+    lastUpdateTimeRef.current = startTimeRef.current;
     
     // Generate new sentence immediately for better mobile performance
     generateNewSentence();
@@ -442,8 +444,11 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
         timestamp: Date.now()
       });
       
-      // Update session statistics (persists across levels)
-      userService.updateSessionStats(1, 0, elapsedTime);
+      // Update session statistics with elapsed time since last update
+      const now = Date.now();
+      const delta = Math.floor((now - lastUpdateTimeRef.current) / 1000);
+      userService.updateSessionStats(1, 0, delta);
+      lastUpdateTimeRef.current = now;
       const updatedSessionStats = userService.getSessionStats();
       setSessionStats(updatedSessionStats);
       console.log('Session stats updated for correct answer:', updatedSessionStats);
@@ -482,8 +487,11 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
         timestamp: Date.now()
       });
       
-      // Update session statistics (persists across levels)
-      userService.updateSessionStats(0, 1, elapsedTime);
+      // Update session statistics with elapsed time since last update
+      const now = Date.now();
+      const delta = Math.floor((now - lastUpdateTimeRef.current) / 1000);
+      userService.updateSessionStats(0, 1, delta);
+      lastUpdateTimeRef.current = now;
       const updatedSessionStats = userService.getSessionStats();
       setSessionStats(updatedSessionStats);
       console.log('Session stats updated for incorrect answer:', updatedSessionStats);
@@ -566,8 +574,11 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
         });
       }
 
-      // Update session stats before exiting
-      userService.updateSessionStats(correctWords, incorrectWords, currentTime);
+      // Update session stats with time since last update before exiting
+      const exitNow = Date.now();
+      const exitDelta = Math.floor((exitNow - lastUpdateTimeRef.current) / 1000);
+      userService.updateSessionStats(correctWords, incorrectWords, exitDelta);
+      lastUpdateTimeRef.current = exitNow;
 
       // IMPORTANT: Send only current level stats for exit detection
       // This ensures the system knows it's an exit, not a level completion
