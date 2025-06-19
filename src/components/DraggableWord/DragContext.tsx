@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 
 interface DragState {
   word: string;
@@ -7,21 +7,25 @@ interface DragState {
   y: number;
   isDragging: boolean;
   activeDropZoneId: string | null;
+  correctPosition?: number;
 }
 
 interface DropZoneInfo {
   id: string;
   rect: DOMRect;
   position: number;
+  isValidPosition: boolean;
+  onDrop: (word: string, position: number) => void;
+  isFilled: boolean;
 }
 
 interface DragContextType {
   dragState: DragState | null;
-  startDrag: (word: string, fontClass: string, x: number, y: number) => void;
+  startDrag: (word: string, fontClass: string, x: number, y: number, correctPosition: number) => void;
   updateDrag: (x: number, y: number) => void;
   stopDrag: () => void;
   cancelDrag: () => void;
-  registerDropZone: (id: string, rect: DOMRect, position: number) => void;
+  registerDropZone: (id: string, rect: DOMRect, position: number, onDrop: (word: string, position: number) => void, isFilled: boolean) => void;
   unregisterDropZone: (id: string) => void;
   getActiveDropZone: () => string | null;
   dropZones: Map<string, DropZoneInfo>;
@@ -33,15 +37,15 @@ export const DragProvider = ({ children }: { children: ReactNode }) => {
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [dropZones, setDropZones] = useState<Map<string, DropZoneInfo>>(new Map());
 
-  const startDrag = useCallback((word: string, fontClass: string, x: number, y: number) => {
-    setDragState({ word, fontClass, x, y, isDragging: true, activeDropZoneId: null });
+  const startDrag = useCallback((word: string, fontClass: string, x: number, y: number, correctPosition: number) => {
+    setDragState({ word, fontClass, x, y, isDragging: true, activeDropZoneId: null, correctPosition });
   }, []);
 
   const updateDrag = useCallback((x: number, y: number) => {
     setDragState(prev => {
       if (!prev || !prev.isDragging) return prev;
       
-      // Find the closest drop zone with improved detection
+      // Find the closest valid drop zone
       let closestZoneId: string | null = null;
       let closestDistance = Infinity;
       
@@ -52,8 +56,8 @@ export const DragProvider = ({ children }: { children: ReactNode }) => {
         const horizontalDistance = x < rect.left ? rect.left - x : x > rect.right ? x - rect.right : 0;
         const verticalDistance = y < rect.top ? rect.top - y : y > rect.bottom ? y - rect.bottom : 0;
         
-        // Add more forgiving margins for middle zones
-        const margin = zone.position === 1 ? 25 : 15; // Larger margin for middle position
+        // Add margins for better drop detection
+        const margin = 15;
         const expandedRect = {
           left: rect.left - margin,
           right: rect.right + margin,
@@ -65,17 +69,14 @@ export const DragProvider = ({ children }: { children: ReactNode }) => {
         if (x >= expandedRect.left && x <= expandedRect.right && 
             y >= expandedRect.top && y <= expandedRect.bottom) {
           
-          // Calculate weighted distance (give preference to vertical alignment)
+          // Calculate distance
           const distance = Math.sqrt(
-            Math.pow(horizontalDistance * 1.5, 2) + // Weight horizontal distance more
+            Math.pow(horizontalDistance, 2) + 
             Math.pow(verticalDistance, 2)
           );
           
-          // Give slight preference to middle zone when distances are close
-          const adjustedDistance = zone.position === 1 ? distance * 0.9 : distance;
-          
-          if (adjustedDistance < closestDistance) {
-            closestDistance = adjustedDistance;
+          if (distance < closestDistance) {
+            closestDistance = distance;
             closestZoneId = id;
           }
         }
@@ -93,10 +94,23 @@ export const DragProvider = ({ children }: { children: ReactNode }) => {
     setDragState(null);
   }, []);
 
-  const registerDropZone = useCallback((id: string, rect: DOMRect, position: number) => {
+  const registerDropZone = useCallback((
+    id: string, 
+    rect: DOMRect, 
+    position: number, 
+    onDrop: (word: string, position: number) => void,
+    isFilled: boolean
+  ) => {
     setDropZones(prev => {
       const newMap = new Map(prev);
-      newMap.set(id, { id, rect, position });
+      newMap.set(id, { 
+        id, 
+        rect, 
+        position,
+        isValidPosition: true,
+        onDrop,
+        isFilled
+      });
       return newMap;
     });
   }, []);
@@ -112,6 +126,35 @@ export const DragProvider = ({ children }: { children: ReactNode }) => {
   const getActiveDropZone = useCallback(() => {
     return dragState?.activeDropZoneId || null;
   }, [dragState?.activeDropZoneId]);
+
+  // Global drop handler
+  useEffect(() => {
+    const handleGlobalDrop = (e: PointerEvent | TouchEvent) => {
+      if (!dragState?.isDragging) return;
+
+      const activeZoneId = dragState.activeDropZoneId;
+      if (activeZoneId && dropZones.has(activeZoneId)) {
+        const zone = dropZones.get(activeZoneId)!;
+        
+        // Only allow drop if:
+        // 1. The zone is not filled
+        // 2. The word's correct position matches this zone's position
+        if (!zone.isFilled && dragState.correctPosition === zone.position) {
+          zone.onDrop(dragState.word, zone.position);
+        }
+      }
+      
+      stopDrag();
+    };
+
+    document.addEventListener('pointerup', handleGlobalDrop);
+    document.addEventListener('touchend', handleGlobalDrop);
+
+    return () => {
+      document.removeEventListener('pointerup', handleGlobalDrop);
+      document.removeEventListener('touchend', handleGlobalDrop);
+    };
+  }, [dragState, dropZones, stopDrag]);
 
   return (
     <DragContext.Provider value={{ 

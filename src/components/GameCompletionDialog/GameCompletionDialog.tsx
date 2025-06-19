@@ -142,17 +142,41 @@ const GameCompletionDialog: React.FC<GameCompletionDialogProps> = ({
   useEffect(() => {
     if (currentUser?.name) {
       setName(currentUser.name);
+      // If user has a name, automatically save their score
+      handleSubmit(currentUser.name);
     }
   }, [currentUser]);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (submittedName?: string) => {
+    const nameToUse = submittedName || name;
+    if (!nameToUse) return;
+
+    // Update user's name if it's changed
+    if (nameToUse !== currentUser?.name) {
+      userService.setUser(nameToUse);
+    }
+
+    // Update user's score
+    userService.updateUserScore({
+      correctWords,
+      incorrectWords,
+      totalTime
+    });
+
+    // Save to leaderboard
     await leaderboardService.addEntry({
-      name: name || undefined,
+      name: nameToUse,
       correctWords,
       incorrectWords,
       totalTime
     });
     setIsScoreSaved(true);
+  };
+
+  const handleNameSubmit = () => {
+    if (name.trim()) {
+      handleSubmit(name);
+    }
   };
 
   const handleNextLevel = () => {
@@ -193,18 +217,24 @@ const GameCompletionDialog: React.FC<GameCompletionDialogProps> = ({
             <span>{formatTime(totalTime)}</span>
           </Stat>
         </Stats>
-        {!currentUser?.name && !isScoreSaved && (
-          <Input
-            type="text"
-            placeholder="Enter your name (optional)"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
+        {!isScoreSaved && (
+          <>
+            {!currentUser?.name && (
+              <Input
+                type="text"
+                placeholder="Enter your name to save score"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            )}
+            <ButtonGroup>
+              <PrimaryButton onClick={handleNameSubmit} disabled={!name.trim() && !currentUser?.name}>
+                Save Score
+              </PrimaryButton>
+            </ButtonGroup>
+          </>
         )}
         <ButtonGroup>
-          {!isScoreSaved && (
-            <PrimaryButton onClick={handleSubmit}>Save Score</PrimaryButton>
-          )}
           <SecondaryButton onClick={handleNextLevel}>
             {getActionButtonText()}
           </SecondaryButton>

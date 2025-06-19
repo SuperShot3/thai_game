@@ -215,15 +215,25 @@ const App: React.FC = () => {
       advanced: 0
     };
 
+    // Calculate progress for each difficulty level
     Object.keys(newProgress).forEach((diff) => {
       const userProgress = userService.getProgress(diff as Difficulty);
       if (userProgress) {
-        newProgress[diff as Difficulty] = (userProgress.correctWords / 5) * 100; // 5 is the target for level completion
+        // Ensure progress doesn't exceed 100%
+        const correctWords = Math.min(userProgress.correctWords, 5);
+        newProgress[diff as Difficulty] = (correctWords / 5) * 100;
       }
     });
     
     setProgress(newProgress);
   };
+
+  // Add effect to recalculate progress when showing dialog
+  useEffect(() => {
+    if (showDialog) {
+      calculateProgress();
+    }
+  }, [showDialog]);
 
   const handleUserSubmit = (userData: { name: string }) => {
     userService.setUser(userData.name);
@@ -248,7 +258,8 @@ const App: React.FC = () => {
     
     const userProgress = userService.getProgress(difficulty);
     if (userProgress) {
-      const newProgressPercentage = (userProgress.correctWords / 5) * 100; // 5 is the target for level completion
+      const correctWords = Math.min(userProgress.correctWords, 5);
+      const newProgressPercentage = (correctWords / 5) * 100;
       
       setProgress(prev => ({
         ...prev,
@@ -265,19 +276,18 @@ const App: React.FC = () => {
           setShowDialog(true);
           setIsGameCompleted(true);
         } else {
-          // Move to next level
+          // Show level completion message but don't automatically move to next level
           const nextLevel = userService.getNextLevel(difficulty);
           if (nextLevel) {
-            setDifficulty(nextLevel);
-            setDialogMessage(`🎊 Level ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)} completed! Moving to ${nextLevel.charAt(0).toUpperCase() + nextLevel.slice(1)} level.`);
+            setDialogMessage(`🎊 Level ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)} completed! You can now try the ${nextLevel} level.`);
             setDialogType('success');
-            setDialogButtonText('Next Level');
+            setDialogButtonText('Continue');
             setShowDialog(true);
           }
         }
       } else {
         // Still working on current level
-        const remaining = 5 - userProgress.correctWords;
+        const remaining = 5 - correctWords;
         setDialogMessage(`Great job! ${remaining} more sentence${remaining !== 1 ? 's' : ''} to complete this level.`);
         setDialogType('success');
         setDialogButtonText('Continue');
@@ -293,13 +303,8 @@ const App: React.FC = () => {
       if (window.confirm('Would you like to restart the game and play again?')) {
         handleGameRestart();
       }
-    } else if (dialogButtonText === 'Next Level') {
-      // Progress to next level
-      const nextLevel = userService.getNextLevel(difficulty);
-      if (nextLevel) {
-        setDifficulty(nextLevel);
-      }
     }
+    // Remove automatic level transition on dialog close
   };
 
   const handleGameRestart = () => {

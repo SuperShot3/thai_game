@@ -105,7 +105,7 @@ class LeaderboardService {
     return new Date(newScore.last_played) > new Date(existingScore.last_played);
   }
 
-  public async addEntry(entry: Omit<LeaderboardEntry, 'name'> & { name?: string }): Promise<void> {
+  public async addEntry(entry: Omit<LeaderboardEntry, 'name'> & { name: string }): Promise<void> {
     const name = entry.name || `Guest ${this.generateGuestNumber()}`;
     const ipAddress = await this.getIpAddress();
     
@@ -119,11 +119,11 @@ class LeaderboardService {
         last_played: new Date().toISOString()
       });
 
-      // First, check for existing entries from this IP
+      // First, check for existing entries from this IP and name
       const { data: existingEntries, error: fetchError } = await supabase
         .from('leaderboard')
         .select('*')
-        .eq('ip_address', ipAddress);
+        .or(`ip_address.eq.${ipAddress},player_name.eq.${entry.name}`);
 
       if (fetchError) {
         console.error('Error checking existing entries:', fetchError);
@@ -131,7 +131,7 @@ class LeaderboardService {
       }
 
       const newEntry = {
-        player_name: name,
+        player_name: entry.name,
         correct: entry.correctWords,
         incorrect: entry.incorrectWords,
         time: entry.totalTime,
@@ -150,11 +150,11 @@ class LeaderboardService {
           return;
         }
 
-        // Delete old entries for this IP
+        // Delete old entries for this IP or name
         await supabase
           .from('leaderboard')
           .delete()
-          .eq('ip_address', ipAddress);
+          .or(`ip_address.eq.${ipAddress},player_name.eq.${entry.name}`);
       }
 
       // Add the new entry

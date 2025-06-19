@@ -27,6 +27,23 @@ const GameBoardContainer = styled.div`
   box-sizing: border-box;
 `;
 
+const DifficultyIndicator = styled.div`
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.5rem 1rem;
+  border-radius: 1.25rem;
+  font-size: 1rem;
+  color: #ffffff;
+  margin-bottom: 1rem;
+  text-transform: capitalize;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+`;
+
 const SentenceContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -225,9 +242,27 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     setShowHint(false);
   }, [difficulty]);
 
+  // Reset all state when difficulty changes
   useEffect(() => {
-    generateNewSentence();
+    setCurrentSentence(null);
+    setShuffledWords([]);
+    setUserAnswer([]);
+    setUsedWords(new Set());
+    setIsComplete(false);
+    setIsCorrect(false);
+    setShowDialog(false);
+    setShowCompletionDialog(false);
+    setShowHint(false);
+    setCurrentHintIndex(0);
+    setCorrectWords(0);
+    setIncorrectWords(0);
+    setElapsedTime(0);
     startTimeRef.current = Date.now();
+    generateNewSentence();
+  }, [difficulty]);
+
+  // Separate timer effect
+  useEffect(() => {
     const timer = setInterval(() => {
       const now = Date.now();
       const elapsed = Math.floor((now - startTimeRef.current) / 1000);
@@ -243,30 +278,13 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
 
       userService.updateProgress(difficulty, {
         ...currentProgress,
-        totalTime: currentProgress.totalTime + 1, // Add one second
+        totalTime: currentProgress.totalTime + 1,
         timestamp: now
       });
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [difficulty, generateNewSentence]);
-
-  useEffect(() => {
-    if (isComplete && isCorrect) {
-      // Handle correct answer progression
-      const timer = setTimeout(() => {
-        // Check if we need to move to next level
-        if (userService.isLevelComplete(difficulty) && difficulty !== 'advanced') {
-          // Level is complete, let the parent component handle progression
-          return;
-        }
-        // Generate new sentence for current level
-        generateNewSentence();
-      }, 1000); // Small delay to show the correct answer briefly
-
-      return () => clearTimeout(timer);
-    }
-  }, [isComplete, isCorrect, difficulty, generateNewSentence]);
+  }, [difficulty]);
 
   // Global drop handler
   useEffect(() => {
@@ -343,15 +361,24 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     };
 
     if (isAnswerCorrect) {
+      const newCorrectWords = currentProgress.correctWords + 1;
       setCorrectWords(prev => prev + 1);
       userService.updateProgress(difficulty, {
         ...currentProgress,
-        correctWords: currentProgress.correctWords + 1,
+        correctWords: newCorrectWords,
         timestamp: Date.now()
       });
       
-      if (userService.isLevelComplete(difficulty)) {
+      // Show completion dialog only when reaching exactly 5 correct words
+      if (newCorrectWords === 5) {
         setShowCompletionDialog(true);
+      } else {
+        // Generate new sentence after a short delay for any correct answer
+        setTimeout(() => {
+          generateNewSentence();
+          setIsComplete(false);
+          setIsCorrect(false);
+        }, 1000);
       }
     } else {
       setIncorrectWords(prev => prev + 1);
@@ -405,13 +432,25 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
 
   const handleClose = () => {
     setShowCompletionDialog(false);
-    onLevelComplete(difficulty);  // Call onLevelComplete to handle progression
+    // Only call onLevelComplete when we've actually completed the level (5 correct words)
+    const progress = userService.getProgress(difficulty);
+    if (progress && progress.correctWords >= 5) {
+      onLevelComplete(difficulty);
+    } else {
+      // If level is not complete, just generate a new sentence
+      generateNewSentence();
+      setIsComplete(false);
+      setIsCorrect(false);
+    }
   };
 
   if (!currentSentence) return null;
 
   return (
     <GameBoardContainer>
+      <DifficultyIndicator>
+        Level: {difficulty}
+      </DifficultyIndicator>
       <SentenceContainer>
         <EnglishText>
           {showHint 
@@ -444,20 +483,25 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
       </AnswerContainer>
 
       <WordContainer>
-        {shuffledWords.map((word, index) => (
-          <DraggableWord
-            key={`${word}-${index}`}
-            word={word}
-            fontClass={currentFont}
-            isUsed={usedWords.has(word)}
-            onDragStart={() => {
-              // Optional: Add any drag start logic
-            }}
-            onDragEnd={() => {
-              // Optional: Add any drag end logic
-            }}
-          />
-        ))}
+        {shuffledWords.map((word, index) => {
+          // Find the correct position for this word in the original sentence
+          const correctPosition = currentSentence.thaiWords.findIndex(w => w === word);
+          return (
+            <DraggableWord
+              key={`${word}-${index}`}
+              word={word}
+              fontClass={currentFont}
+              correctPosition={correctPosition}
+              isUsed={usedWords.has(word)}
+              onDragStart={() => {
+                // Optional: Add any drag start logic
+              }}
+              onDragEnd={() => {
+                // Optional: Add any drag end logic
+              }}
+            />
+          );
+        })}
       </WordContainer>
 
       <ButtonContainer>

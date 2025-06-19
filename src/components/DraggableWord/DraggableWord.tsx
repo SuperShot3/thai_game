@@ -5,6 +5,7 @@ import './DraggableWord.css';
 interface DraggableWordProps {
   word: string;
   fontClass: string;
+  correctPosition: number;
   onDragStart?: () => void;
   onDragEnd?: () => void;
   isUsed?: boolean;
@@ -12,7 +13,8 @@ interface DraggableWordProps {
 
 const DraggableWord: React.FC<DraggableWordProps> = ({ 
   word, 
-  fontClass, 
+  fontClass,
+  correctPosition,
   onDragStart, 
   onDragEnd,
   isUsed = false
@@ -31,13 +33,13 @@ const DraggableWord: React.FC<DraggableWordProps> = ({
       const x = e.clientX;
       const y = e.clientY;
       
-      startDrag(word, fontClass, x, y);
+      startDrag(word, fontClass, x, y, correctPosition);
       onDragStart?.();
       
       // Set pointer capture for better touch handling
       wordRef.current.setPointerCapture(e.pointerId);
     }
-  }, [word, fontClass, startDrag, onDragStart, isUsed]);
+  }, [word, fontClass, correctPosition, startDrag, onDragStart, isUsed]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     e.preventDefault();

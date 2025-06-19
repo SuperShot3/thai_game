@@ -1,5 +1,4 @@
 import { Difficulty } from '../types';
-import { supabase } from './supabaseService';
 
 type ProgressData = {
   totalTime: number;
@@ -10,6 +9,12 @@ type ProgressData = {
 
 interface User {
   name: string;
+  lastScore?: {
+    correctWords: number;
+    incorrectWords: number;
+    totalTime: number;
+    timestamp: number;
+  };
 }
 
 class UserService {
@@ -33,7 +38,7 @@ class UserService {
     if (storedUser) {
       try {
         this.currentUser = JSON.parse(storedUser);
-    } catch (error) {
+      } catch (error) {
         console.error('Error parsing stored user:', error);
         this.currentUser = null;
       }
@@ -42,7 +47,23 @@ class UserService {
 
   public setUser(name: string): void {
     this.currentUser = { name };
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.currentUser));
+    this.saveToStorage();
+  }
+
+  public updateUserScore(score: { correctWords: number; incorrectWords: number; totalTime: number }): void {
+    if (this.currentUser) {
+      this.currentUser.lastScore = {
+        ...score,
+        timestamp: Date.now()
+      };
+      this.saveToStorage();
+    }
+  }
+
+  private saveToStorage(): void {
+    if (this.currentUser) {
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.currentUser));
+    }
   }
 
   public getUser(): User | null {
@@ -52,6 +73,10 @@ class UserService {
   public clearUser(): void {
     this.currentUser = null;
     localStorage.removeItem(this.STORAGE_KEY);
+    // Also clear all progress
+    Object.values(['beginner', 'intermediate', 'advanced'] as const).forEach(diff => {
+      this.clearProgress(diff);
+    });
   }
 
   public getProgress(difficulty: Difficulty): ProgressData | null {
@@ -59,8 +84,15 @@ class UserService {
     const storedProgress = localStorage.getItem(key);
     if (storedProgress) {
       try {
-        return JSON.parse(storedProgress);
-    } catch (error) {
+        const progress = JSON.parse(storedProgress);
+        // Validate and normalize progress data
+        return {
+          totalTime: Math.max(0, Number(progress.totalTime) || 0),
+          timestamp: Number(progress.timestamp) || Date.now(),
+          correctWords: Math.max(0, Math.min(5, Number(progress.correctWords) || 0)),
+          incorrectWords: Math.max(0, Number(progress.incorrectWords) || 0)
+        };
+      } catch (error) {
         console.error('Error parsing stored progress:', error);
         return null;
       }
@@ -69,8 +101,16 @@ class UserService {
   }
 
   public updateProgress(difficulty: Difficulty, data: ProgressData): void {
+    // Validate and normalize data before saving
+    const normalizedData = {
+      totalTime: Math.max(0, Number(data.totalTime) || 0),
+      timestamp: Number(data.timestamp) || Date.now(),
+      correctWords: Math.max(0, Math.min(5, Number(data.correctWords) || 0)),
+      incorrectWords: Math.max(0, Number(data.incorrectWords) || 0)
+    };
+
     const key = `progress_${difficulty}`;
-    localStorage.setItem(key, JSON.stringify(data));
+    localStorage.setItem(key, JSON.stringify(normalizedData));
   }
 
   public clearProgress(difficulty: Difficulty): void {
@@ -80,10 +120,16 @@ class UserService {
 
   public isLevelComplete(difficulty: Difficulty): boolean {
     const progress = this.getProgress(difficulty);
-    return progress ? progress.correctWords >= 5 : false;
+    // Ensure we have exactly 5 correct words for level completion
+    return progress ? progress.correctWords === 5 : false;
   }
 
   public getNextLevel(difficulty: Difficulty): Difficulty | null {
+    // Only allow progression if current level is complete
+    if (!this.isLevelComplete(difficulty)) {
+      return null;
+    }
+
     switch (difficulty) {
       case 'beginner':
         return 'intermediate';

@@ -18,7 +18,7 @@ const DroppableZone: React.FC<DroppableZoneProps> = ({
   fontClass 
 }) => {
   const zoneRef = useRef<HTMLDivElement>(null);
-  const { dragState, registerDropZone, unregisterDropZone, getActiveDropZone, cancelDrag } = useDragContext();
+  const { dragState, registerDropZone, unregisterDropZone, getActiveDropZone } = useDragContext();
   const [isDragOver, setIsDragOver] = useState(false);
   const zoneId = `drop-zone-${position}`;
 
@@ -26,9 +26,9 @@ const DroppableZone: React.FC<DroppableZoneProps> = ({
   const updateDropZoneRect = useCallback(() => {
     if (zoneRef.current) {
       const rect = zoneRef.current.getBoundingClientRect();
-      registerDropZone(zoneId, rect, position);
+      registerDropZone(zoneId, rect, position, onDrop, isFilled);
     }
-  }, [zoneId, position, registerDropZone]);
+  }, [zoneId, position, registerDropZone, onDrop, isFilled]);
 
   // Register this drop zone with the drag context
   useEffect(() => {
@@ -60,21 +60,6 @@ const DroppableZone: React.FC<DroppableZoneProps> = ({
     setIsDragOver(activeZoneId === zoneId);
   }, [getActiveDropZone, zoneId]);
 
-  const handlePointerUp = (e: React.PointerEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if (dragState?.isDragging) {
-      const activeZoneId = getActiveDropZone();
-      
-      if (activeZoneId === zoneId && !isFilled) {
-        onDrop(dragState.word, position);
-      } else {
-        cancelDrag();
-      }
-    }
-  };
-
   const handlePointerEnter = (e: React.PointerEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -89,8 +74,7 @@ const DroppableZone: React.FC<DroppableZoneProps> = ({
   return (
     <div
       ref={zoneRef}
-      className={`droppable-zone ${isFilled ? 'filled' : ''} ${isDragOver ? 'drag-over' : ''}`}
-      onPointerUp={handlePointerUp}
+      className={`droppable-zone ${isFilled ? 'filled' : ''} ${isDragOver && dragState?.correctPosition === position ? 'drag-over' : ''}`}
       onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}
       onPointerMove={updateDropZoneRect}
