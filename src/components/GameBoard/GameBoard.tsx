@@ -6,6 +6,7 @@ import { leaderboardService } from '../Leaderboard/leaderboardService';
 import { Difficulty, ThaiSentence } from '../../types';
 import DraggableWord from '../DraggableWord/DraggableWord';
 import DroppableZone from '../DroppableZone/DroppableZone';
+import AIHelpAssistant from '../AIHelpAssistant/AIHelpAssistant';
 import '../../styles/fonts.css';
 import { useDragContext } from '../DraggableWord/DragContext';
 import './GameBoard.css';
@@ -89,18 +90,6 @@ const ProgressFill = styled.div<{ progress: number }>`
   width: ${props => props.progress}%;
   transition: width 0.3s ease;
   border-radius: 2px;
-`;
-
-const SentenceContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-  width: 100%;
-  padding: 1rem;
-  background: #f8f9fa;
-  border-radius: 0.5rem;
-  box-sizing: border-box;
 `;
 
 const WordContainer = styled.div`
@@ -244,6 +233,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
   const [isExiting, setIsExiting] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [isLevelCompleting, setIsLevelCompleting] = useState(false);
+  const [helpClickedThisRound, setHelpClickedThisRound] = useState(false);
   const [sessionStats, setSessionStats] = useState({
     totalCorrectWords: 0,
     totalIncorrectWords: 0,
@@ -287,10 +277,11 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     setCurrentSentence(newSentence);
     setCurrentFont(getRandomFont());
     setShuffledWords(shuffleArray(newSentence.thaiWords));
-    setUserAnswer([]);
-    setUsedWords(new Set()); // Reset used words for new sentence
+    setUserAnswer(Array(newSentence.thaiWords.length).fill(''));
+    setUsedWords(new Set());
     setIsComplete(false);
     setShowDialog(false);
+    setHelpClickedThisRound(false);
   }, [difficulty]);
 
   // Generate new sentence when difficulty changes
@@ -512,6 +503,10 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  const handleHelpClick = () => {
+    setHelpClickedThisRound(true);
   };
 
   const handleExitClick = () => {
@@ -750,6 +745,15 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
           {isExiting ? 'Exiting...' : 'Exit'}
         </Button>
       </ButtonContainer>
+
+      {/* AI Help Assistant */}
+      <AIHelpAssistant
+        targetSentence={currentSentence.thaiWords}
+        userAnswer={userAnswer}
+        availableWords={shuffledWords}
+        helpClickedThisRound={helpClickedThisRound}
+        onHelpClick={handleHelpClick}
+      />
 
       {/* Exit Confirmation Dialog */}
       {showExitConfirm && (

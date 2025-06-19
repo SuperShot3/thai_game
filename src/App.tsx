@@ -751,111 +751,115 @@ const App: React.FC = () => {
 
   return (
     <DragProvider>
-      <>
-        <GlobalStyle />
-        <AppContainer>
-          <Title>Thai Sentence Builder</Title>
-          {console.log('🎮 Rendering Game Board - showUserForm is false')}
-          
-          {/* Development Mode Indicator */}
-          {isDevelopmentMode && (
-            <div style={{
-              background: '#ff9800',
-              color: 'white',
-              padding: '0.5rem 1rem',
-              borderRadius: '8px',
-              margin: '0.5rem 0',
-              textAlign: 'center',
-              fontWeight: 'bold',
-              border: '1px solid #f57c00',
-              fontSize: '0.9rem'
-            }}>
-              🔧 DEVELOPMENT MODE - Fresh start on each restart
-              <button 
-                onClick={handleDevelopmentReset}
-                style={{
-                  background: '#f57c00',
+      {(() => {
+        console.log('🎮 Rendering Game Board - showUserForm is false');
+        return (
+          <>
+            <GlobalStyle />
+            <AppContainer>
+              <Title>Thai Sentence Builder</Title>
+              
+              {/* Development Mode Indicator */}
+              {isDevelopmentMode && (
+                <div style={{
+                  background: '#ff9800',
                   color: 'white',
-                  border: 'none',
-                  padding: '0.25rem 0.5rem',
-                  borderRadius: '4px',
-                  marginLeft: '1rem',
-                  cursor: 'pointer',
-                  fontSize: '0.8rem'
-                }}
-              >
-                Reset Everything
-              </button>
-              <button 
-                onClick={handleAddTestEntry}
-                style={{
-                  background: '#4CAF50',
-                  color: 'white',
-                  border: 'none',
-                  padding: '0.25rem 0.5rem',
-                  borderRadius: '4px',
-                  marginLeft: '0.5rem',
-                  cursor: 'pointer',
-                  fontSize: '0.8rem'
-                }}
-              >
-                Add Bob Test
-              </button>
-              <button 
-                onClick={handleTestConnection}
-                style={{
-                  background: '#2196f3',
-                  color: 'white',
-                  border: 'none',
-                  padding: '0.25rem 0.5rem',
-                  borderRadius: '4px',
-                  marginLeft: '0.5rem',
-                  cursor: 'pointer',
-                  fontSize: '0.8rem'
-                }}
-              >
-                Test Connection
-              </button>
-            </div>
-          )}
-          
-          <ProgressText>{getProgressText()}</ProgressText>
-          {isChangingLevel && (
-            <div style={{
-              background: 'rgba(76, 175, 80, 0.1)',
-              color: '#4CAF50',
-              padding: '0.5rem 1rem',
-              borderRadius: '8px',
-              margin: '0.5rem 0',
-              textAlign: 'center',
-              fontWeight: 'bold',
-              border: '1px solid #4CAF50'
-            }}>
-              🔄 Changing Level...
-            </div>
-          )}
-          <DifficultySelector
-            currentDifficulty={difficulty}
-            progress={progress}
-            onLevelSelect={handleLevelSelect}
-            lockedLevels={getLockedLevels()}
-          />
-          <GameBoard
-            difficulty={difficulty}
-            onLevelComplete={handleLevelComplete}
-          />
-          <AdManager isCommercialMode={isCommercialMode} onToggleCommercialMode={handleToggleCommercialMode} />
-          {showDialog && (
-            <Dialog
-              message={dialogMessage}
-              type={dialogType}
-              onClose={handleDialogClose}
-              buttonText={dialogButtonText}
-            />
-          )}
-        </AppContainer>
-        <DragLayer />
-      </>
+                  padding: '0.5rem 1rem',
+                  borderRadius: '8px',
+                  margin: '0.5rem 0',
+                  textAlign: 'center',
+                  fontWeight: 'bold',
+                  border: '1px solid #f57c00',
+                  fontSize: '0.9rem'
+                }}>
+                  🔧 DEVELOPMENT MODE - Fresh start on each restart
+                  <button 
+                    onClick={handleDevelopmentReset}
+                    style={{
+                      background: '#f57c00',
+                      color: 'white',
+                      border: 'none',
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '4px',
+                      marginLeft: '1rem',
+                      cursor: 'pointer',
+                      fontSize: '0.8rem'
+                    }}
+                  >
+                    Reset Everything
+                  </button>
+                  <button 
+                    onClick={handleAddTestEntry}
+                    style={{
+                      background: '#4CAF50',
+                      color: 'white',
+                      border: 'none',
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '4px',
+                      marginLeft: '0.5rem',
+                      cursor: 'pointer',
+                      fontSize: '0.8rem'
+                    }}
+                  >
+                    Add Bob Test
+                  </button>
+                  <button 
+                    onClick={handleTestConnection}
+                    style={{
+                      background: '#2196f3',
+                      color: 'white',
+                      border: 'none',
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '4px',
+                      marginLeft: '0.5rem',
+                      cursor: 'pointer',
+                      fontSize: '0.8rem'
+                    }}
+                  >
+                    Test Connection
+                  </button>
+                </div>
+              )}
+              
+              <ProgressText>{getProgressText()}</ProgressText>
+              {isChangingLevel && (
+                <div style={{
+                  background: 'rgba(76, 175, 80, 0.1)',
+                  color: '#4CAF50',
+                  padding: '0.5rem 1rem',
+                  borderRadius: '8px',
+                  margin: '0.5rem 0',
+                  textAlign: 'center',
+                  fontWeight: 'bold',
+                  border: '1px solid #4CAF50'
+                }}>
+                  🔄 Changing Level...
+                </div>
+              )}
+              <DifficultySelector
+                currentDifficulty={difficulty}
+                progress={progress}
+                onLevelSelect={handleLevelSelect}
+                lockedLevels={getLockedLevels()}
+              />
+              <GameBoard
+                difficulty={difficulty}
+                onLevelComplete={handleLevelComplete}
+              />
+              <AdManager isCommercialMode={isCommercialMode} onToggleCommercialMode={handleToggleCommercialMode} />
+              {showDialog && (
+                <Dialog
+                  message={dialogMessage}
+                  type={dialogType}
+                  onClose={handleDialogClose}
+                  buttonText={dialogButtonText}
+                />
+              )}
+            </AppContainer>
+            <DragLayer />
+          </>
+        );
+      })()}
     </DragProvider>
   );
 };

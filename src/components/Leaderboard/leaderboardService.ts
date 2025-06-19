@@ -71,27 +71,62 @@ class LeaderboardService {
         time: entry.totalTime
       });
 
-      // NEW LOGIC: Always add the entry, don't check for duplicates
-      const newEntry = {
-        player_name: name,
-        correct: entry.correctWords,
-        incorrect: entry.incorrectWords,
-        time: entry.totalTime,
-        ip_address: 'local', // Simplified IP handling
-        last_played: new Date().toISOString()
-      };
-
-      console.log('💾 Inserting new entry:', newEntry);
-      const { error: insertError } = await supabase
+      // Check if the exact same entry already exists
+      const { data: existing, error: selectError } = await supabase
         .from('leaderboard')
-        .insert([newEntry]);
+        .select('id')
+        .eq('player_name', name)
+        .eq('correct', entry.correctWords)
+        .eq('incorrect', entry.incorrectWords)
+        .eq('time', entry.totalTime)
+        .limit(1);
 
-      if (insertError) {
-        console.error('❌ Supabase Insert Error:', insertError.message);
-        throw insertError;
+      if (selectError) {
+        console.error('❌ Supabase Select Error:', selectError.message);
+        throw selectError;
       }
 
-      console.log('✅ Entry successfully added to leaderboard');
+      const timestamp = new Date().toISOString();
+
+      if (existing && existing.length > 0) {
+        // Duplicate found - update the last_played timestamp instead of inserting
+        const existingId = (existing[0] as { id: number }).id;
+        console.log('⚠️ Duplicate entry found, updating last_played for id', existingId);
+
+        const { error: updateError } = await supabase
+          .from('leaderboard')
+          .update({ last_played: timestamp, ip_address: 'local' })
+          .eq('id', existingId);
+
+        if (updateError) {
+          console.error('❌ Supabase Update Error:', updateError.message);
+          throw updateError;
+        }
+
+        console.log('✅ Existing entry updated');
+      } else {
+        // Insert new record if no duplicate exists
+        const newEntry = {
+          player_name: name,
+          correct: entry.correctWords,
+          incorrect: entry.incorrectWords,
+          time: entry.totalTime,
+          ip_address: 'local',
+          last_played: timestamp
+        };
+
+        console.log('💾 Inserting new entry:', newEntry);
+        const { error: insertError } = await supabase
+          .from('leaderboard')
+          .insert([newEntry]);
+
+        if (insertError) {
+          console.error('❌ Supabase Insert Error:', insertError.message);
+          throw insertError;
+        }
+
+        console.log('✅ Entry successfully added to leaderboard');
+      }
       
       // Reload the leaderboard to show the new entry
       await this.loadLeaderboard();
