@@ -399,7 +399,6 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     }
 
     const isAnswerCorrect = checkAnswer();
-    setIsComplete(true);
 
     const currentProgress = userService.getProgress(difficulty) || {
       totalTime: 0,
@@ -409,6 +408,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
     };
 
     if (isAnswerCorrect) {
+      setIsComplete(true);
       const newCorrectWords = currentProgress.correctWords + 1;
       console.log('Correct answer! Progress:', {
         current: currentProgress.correctWords,
@@ -456,6 +456,8 @@ const GameBoard: React.FC<GameBoardProps> = ({ difficulty, onLevelComplete }) =>
         }, 1000);
       }
     } else {
+      // Keep the board interactive for retries
+      setIsComplete(false);
       setIncorrectWords(prev => prev + 1);
       
       // Update incorrect words count
